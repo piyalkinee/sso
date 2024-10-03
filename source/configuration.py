@@ -31,7 +31,7 @@ _base_config = {
         "port": os.getenv("POSTGRES_PORT", "5432"),
         "user": os.getenv("POSTGRES_USER", "user"),
         "password": os.getenv("POSTGRES_PASSWORD", "password"),
-        "database": os.getenv("POSTGRES_DATABASE_API", "database")
+        "database": os.getenv("POSTGRES_DATABASE_SSO", "database")
     },
     "access_security": {
         "secret_key": "secret",
