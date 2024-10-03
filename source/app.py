@@ -91,9 +91,9 @@ def create_app():
         title="Single SignOn API",
         debug=configuration.conf['debug'],
         version=VERSION,
-        docs_url="/api/docs",
-        redoc_url="/api/redoc",
-        openapi_url="/api/openapi.json",
+        docs_url=f"{configuration.conf['http']['path_prefix']}/docs",
+        redoc_url=f"{configuration.conf['http']['path_prefix']}/redoc",
+        openapi_url=f"{configuration.conf['http']['path_prefix']}/openapi.json",
         exception_handlers=exception_handlers,
         lifespan=lifespan
     )
