@@ -20,7 +20,7 @@ _base_config = {
     "workers": int(os.getenv("WORKERS", 1)),
     "api": {
         "host": os.getenv("API_HOST", "0.0.0.0"),
-        "port": os.getenv("API_PORT", "8080"),
+        "port": os.getenv("API_PORT", "9897"),
         "ssl": os.getenv("SSL", "True") == "True"
     },
     "http": {

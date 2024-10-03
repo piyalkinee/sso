@@ -20,6 +20,6 @@ setup(
         'python-dotenv==1.0.1',
         'psycopg2-binary==2.9.9',
         'bcrypt==4.2.0',
-        'python-jose==3.3.0'
+        'python-jose[cryptography]==3.3.0'
     ],
 )
