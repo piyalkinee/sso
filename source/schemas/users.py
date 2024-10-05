@@ -1,25 +1,28 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional, List
+
 
 class UserInfo(BaseModel):
-    name: str = None
-    phone_number: str = None
-    telegram_username: str = None
-    email: str = None
-    language: str = None
+    name: Optional[str] = None
+    phone_number: Optional[str] = None
+    telegram_username: Optional[str] = None
+    email: Optional[str] = None
+    language: Optional[str] = None
 
 
 class UserSecurity(BaseModel):
-    ban_message: str = None
-    is_banned: bool = None
-    login_ip: str = None
-    login_count: int = None
-    login_at: datetime = None
-    banned_at: datetime = None
+    ban_message: Optional[str] = None
+    is_banned: Optional[bool] = None
+    login_ip: Optional[str] = None
+    login_count: Optional[int] = None
+    login_at: Optional[datetime] = None
+    banned_at: Optional[datetime] = None
+
 
 class UserGroup(BaseModel):
-    name: str = None
-    claims: list[str] = None
+    name: Optional[str] = None
+    claims: Optional[List[str]] = None
 
 
 class User(BaseModel):

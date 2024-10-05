@@ -14,6 +14,6 @@ class TokensInfo(Base):
         default=lambda: func.now() + text("INTERVAL '1 day'"),
         server_default=text("NOW() + INTERVAL '1 day'")
     )
-    access_token = Column(String(256), nullable=False)
-    refresh_token = Column(String(256), nullable=False)
+    access_token = Column(Text, nullable=False)
+    refresh_token = Column(Text, nullable=False)
     created_at = Column(DateTime, nullable=False, default=func.now(), server_default=func.now())

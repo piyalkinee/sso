@@ -10,18 +10,42 @@ from ..configuration import conf
 
 def generate_token(data: dict, type: str, ttl: float = 10) -> str:
     logger.debug("In core [generate_token]")
-    return str(
-        jose.jwt.encode(
-            {
-                **data,
-                "type": type,
-                "exp": datetime.datetime.now() + datetime.timedelta(minutes=ttl),
-                "salt": secrets.token_urlsafe(32),
-            },
-            conf.access_security.secret_key,
-            algorithm=conf.access_security.algorithm,
+    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=ttl)
+    token_payload = {
+        **data,
+        "type": type,
+        "exp": int(expiration_time.timestamp()),
+        "salt": secrets.token_urlsafe(32),
+    }
+
+    logger.debug(f"Token payload before serialization: {token_payload}")
+
+    def make_serializable(obj):
+        if isinstance(obj, dict):
+            return {k: make_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [make_serializable(v) for v in obj]
+        elif isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+            # return int(obj.timestamp())
+        elif isinstance(obj, datetime.date):
+            return obj.isoformat()
+        else:
+            return obj
+
+    serializable_payload = make_serializable(token_payload)
+    logger.debug(f"Serializable payload: {serializable_payload}")
+
+    try:
+        token = jose.jwt.encode(
+            serializable_payload,
+            conf['access_security']['secret_key'],
+            algorithm=conf['access_security']['algorithm'],
         )
-    )
+        return str(token)
+    except Exception as e:
+        logger.error(f"Error generating token: {e}")
+        raise
 
 
 def decode_token(token: str) -> dict[str, str]:

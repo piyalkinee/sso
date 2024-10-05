@@ -36,14 +36,14 @@ async def base(
     access_token: str = access_tokens.generate_token(
         type="access",
         data=full_user_data.model_dump(),
-        ttl=conf.access_security.access_token_ttl
+        ttl=conf['access_security']['access_token_ttl']
     )
     refresh_token = access_tokens.generate_token(
         type="refresh",
         data={
             "id": user_data.id
         },
-        ttl=conf.access_security.refresh_token_ttl
+        ttl=conf['access_security']['refresh_token_ttl']
     )
     logger.debug("Save token in base")
     await qtokens.create(
@@ -51,7 +51,7 @@ async def base(
         token=stokens.TokenCreate(
             access_token=access_token,
             refresh_token=refresh_token,
-            valid_to=datetime.today() + timedelta(minutes=conf.access_security.access_token_ttl),
+            valid_to=datetime.today() + timedelta(minutes=conf['access_security']['access_token_ttl']),
             user_id=user_data.id,
         ))
     return soutput.AccessOutput(

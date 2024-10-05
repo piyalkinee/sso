@@ -16,9 +16,9 @@ async def get_by_email(
         logger.debug(f"In model [get_by_email], email: {email}")
         user_data = await database.fetch_one("""
             SELECT 
-                upi.user_id,
-                us.password_hash,
-                us.password_salt
+                upi.user_id as id,
+                us.password_hash as hash,
+                us.password_salt as salt
             FROM 
                 users.users_personal_info AS upi
             JOIN
@@ -44,7 +44,7 @@ async def get_data_for_token(
 ) -> susers.User:
     try:
         logger.debug(f"In model [get], id: {id}")
-        user_data = await database.fetch_one(f"""
+        user_data = dict(await database.fetch_one(f"""
             SELECT 
                 ucore.id AS id,
                 ucore.created_at AS created_at,
@@ -54,8 +54,8 @@ async def get_data_for_token(
                 uinfo.telegram_username AS telegram_username,
                 uinfo.email AS email,
                 uinfo.language AS language,
-                g.name AS group_name,
-                ARRAY_AGG(c.name) AS claims
+                ARRAY_AGG(DISTINCT g.name) FILTER (WHERE g.name IS NOT NULL) AS group_names,
+                ARRAY_AGG(DISTINCT c.name) FILTER (WHERE c.name IS NOT NULL) AS claim_names
             FROM 
                 users.users_core ucore
             INNER JOIN 
@@ -78,11 +78,10 @@ async def get_data_for_token(
                 uinfo.phone_number, 
                 uinfo.telegram_username, 
                 uinfo.email, 
-                uinfo.language, 
-                g.name;
+                uinfo.language;
         """, {
             "user_id": id
-        })
+        }))
         if not user_data:
             raise ItemNotFoundError
         user_info = susers.UserInfo(
@@ -92,18 +91,16 @@ async def get_data_for_token(
             email=user_data["email"],
             language=user_data["language"]
         )
-        user_groups = []
-        for row in user_data:
-            user_groups.append(susers.UserGroup(
-                name=row["group_name"],
-                claims=row["claims"]  # В ARRAY_AGG будет список claims
-            ))
+        group_names = user_data.get("group_names") or []
+        claim_names = user_data.get("claim_names") or []
+        user_groups = [susers.UserGroup(name=group_name) for group_name in group_names]
         return susers.User(
             id=user_data["id"],
             created_at=user_data["created_at"],
             updated_at=user_data["updated_at"],
             info=user_info,
-            groups=user_groups
+            groups=user_groups,
+            claims=claim_names
         )
     except PostgresError as e:
         logger.warning(e)

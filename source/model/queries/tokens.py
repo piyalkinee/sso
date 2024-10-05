@@ -15,7 +15,7 @@ async def create(
     try:
         query = f"""
             INSERT INTO 
-                system.access_tokens 
+                access.tokens_info 
                 (user_id, access_token, refresh_token)
             VALUES 
                 (:user_id, :access_token, :refresh_token)
