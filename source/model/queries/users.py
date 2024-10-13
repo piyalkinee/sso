@@ -1,10 +1,8 @@
-from datetime import datetime
 from loguru import logger
 from databases.core import Connection
 from asyncpg import PostgresError
 
 from ...exceptions.database import ItemNotFoundError, DatabaseError
-from ...exceptions.http import HTTPForbiddenError
 from ...schemas import users as susers, output as soutput
 
 
@@ -44,7 +42,7 @@ async def get_data_for_token(
 ) -> susers.User:
     try:
         logger.debug(f"In model [get], id: {id}")
-        user_data = dict(await database.fetch_one(f"""
+        rows = await database.fetch_all(f"""
             SELECT 
                 ucore.id AS id,
                 ucore.created_at AS created_at,
@@ -54,8 +52,10 @@ async def get_data_for_token(
                 uinfo.telegram_username AS telegram_username,
                 uinfo.email AS email,
                 uinfo.language AS language,
-                ARRAY_AGG(DISTINCT g.name) FILTER (WHERE g.name IS NOT NULL) AS group_names,
-                ARRAY_AGG(DISTINCT c.name) FILTER (WHERE c.name IS NOT NULL) AS claim_names
+                g.id AS group_id,
+                g.name AS group_name,
+                c.id AS claim_id,
+                c.name AS claim_name
             FROM 
                 users.users_core ucore
             INNER JOIN 
@@ -70,37 +70,46 @@ async def get_data_for_token(
                 rights.claims c ON c.id = gclaims.claim_id
             WHERE 
                 ucore.id = :user_id
-            GROUP BY 
-                ucore.id, 
-                ucore.created_at, 
-                ucore.updated_at,
-                uinfo.name,
-                uinfo.phone_number, 
-                uinfo.telegram_username, 
-                uinfo.email, 
-                uinfo.language;
+            ORDER BY 
+                g.id, c.id;
         """, {
             "user_id": id
-        }))
-        if not user_data:
+        })
+        if not rows:
             raise ItemNotFoundError
+        first_row = rows[0]
         user_info = susers.UserInfo(
-            name=user_data["name"],
-            phone_number=user_data["phone_number"],
-            telegram_username=user_data["telegram_username"],
-            email=user_data["email"],
-            language=user_data["language"]
+            name=first_row["name"],
+            phone_number=first_row["phone_number"],
+            telegram_username=first_row["telegram_username"],
+            email=first_row["email"],
+            language=first_row["language"]
         )
-        group_names = user_data.get("group_names") or []
-        claim_names = user_data.get("claim_names") or []
-        user_groups = [susers.UserGroup(name=group_name) for group_name in group_names]
+        groups_dict = {}
+        for row in rows:
+            group_id = row["group_id"]
+            group_name = row["group_name"]
+            claim_name = row["claim_name"]
+            if group_id not in groups_dict:
+                groups_dict[group_id] = {
+                    "name": group_name,
+                    "claims": []
+                }
+            if claim_name and claim_name not in groups_dict[group_id]["claims"]:
+                groups_dict[group_id]["claims"].append(claim_name)
+        user_groups = [
+            susers.UserGroup(
+                name=group_data["name"],
+                claims=group_data["claims"]
+            ) for group_data in groups_dict.values()
+        ]
         return susers.User(
-            id=user_data["id"],
-            created_at=user_data["created_at"],
-            updated_at=user_data["updated_at"],
+            id=first_row["id"],
+            created_at=first_row["created_at"],
+            updated_at=first_row["updated_at"],
             info=user_info,
             groups=user_groups,
-            claims=claim_names
+            claims=[]
         )
     except PostgresError as e:
         logger.warning(e)

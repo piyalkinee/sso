@@ -2,7 +2,6 @@ from fastapi import Request, Depends
 from loguru import logger
 
 from ..schemas import middleware
-from ..schemas import users as susers
 
 
 async def _session(
