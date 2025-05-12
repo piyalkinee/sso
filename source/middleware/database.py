@@ -1,6 +1,6 @@
 from functools import wraps
 
-from ..core.database import postgres
+from source.core.database import postgres
 
 
 def add_database_to_session(function):

@@ -8,7 +8,7 @@ from functools import wraps
 
 from loguru import logger
 
-from ..exceptions import http
+from source.exceptions import http
 
 
 def get_classes_from_module(module):

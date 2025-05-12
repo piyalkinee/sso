@@ -1,7 +1,7 @@
 from fastapi import Depends, Request
 from loguru import logger
 
-from ..schemas import middleware
+from source.schemas import middleware
 
 
 async def _session(request: Request = None) -> middleware.Session:

@@ -77,7 +77,7 @@ async def refresh(
     new_access_token = access_tokens.generate_token(
         type="access",
         data=full_user_data.model_dump(),
-        ttl=conf.access_security.access_token_ttl,
+        ttl=settings.access_security.access_token_ttl,
     )
 
     try:

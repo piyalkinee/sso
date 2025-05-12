@@ -4,8 +4,8 @@ from functools import wraps
 
 from fastapi import HTTPException, Request, status
 
-from ..core.access_tokens import decode_token
-from ..schemas import users as susers
+from source.core.access_tokens import decode_token
+from source.schemas import users as susers
 
 
 def add_user_to_session(function):
