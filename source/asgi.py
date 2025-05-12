@@ -1,13 +1,13 @@
-import sys
 import logging
 import signal
+import sys
 import time
-import uvicorn.server
 
+import uvicorn.server
+from gunicorn import sock
 from gunicorn.app.base import BaseApplication
 from gunicorn.arbiter import Arbiter
 from gunicorn.glogging import Logger
-from gunicorn import sock
 from loguru import logger
 
 from . import settings
@@ -31,7 +31,9 @@ class InterceptHandler(logging.Handler):
             frame = frame.f_back
             depth += 1
 
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+        logger.opt(depth=depth, exception=record.exc_info).log(
+            level, record.getMessage()
+        )
 
 
 class StubbedGunicornLogger(Logger):
@@ -51,9 +53,9 @@ class ABArbiter(Arbiter):
 
     def stop(self, graceful=True):
         unlink = (
-                self.reexec_pid == self.master_pid == 0
-                and not self.systemd
-                and not self.cfg.reuse_port
+            self.reexec_pid == self.master_pid == 0
+            and not self.systemd
+            and not self.cfg.reuse_port
         )
         sock.close_sockets(self.LISTENERS, unlink)
         self.LISTENERS = []
@@ -75,7 +77,8 @@ class StandaloneApplication(BaseApplication):
 
     def load_config(self):
         config = {
-            key: value for key, value in self.options.items()
+            key: value
+            for key, value in self.options.items()
             if key in self.cfg.settings and value is not None
         }
         for key, value in config.items():
@@ -113,10 +116,12 @@ def start_app(app, **kwargs):
             seen.add(name.split(".")[0])
             logging.getLogger(name).handlers = [intercept_handler]
 
-    _format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
-              "<level>{level: <8}</level> | {process} |" \
-              "<cyan>{name}</cyan>:<cyan>{function}</cyan>:" \
-              "<cyan>{line}</cyan> - <level>{message}</level>"
+    _format = (
+        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+        "<level>{level: <8}</level> | {process} |"
+        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:"
+        "<cyan>{line}</cyan> - <level>{message}</level>"
+    )
     logger.configure(handlers=[{"sink": sys.stdout, "serialize": 0, "format": _format}])
 
     StubbedGunicornLogger.loglevel = options["loglevel"]

@@ -1,5 +1,5 @@
-from fastapi import Request
 from databases.core import Connection
+from fastapi import Request
 
 
 class Session:

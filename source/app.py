@@ -1,18 +1,18 @@
+import importlib.metadata
+import logging
 import os
 import sys
-import logging
-import importlib.metadata
 
 import fastapi
 import starlette.requests
-
+from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from setproctitle import setproctitle
-from fastapi.middleware.cors import CORSMiddleware
 
 from source.settings import settings
-from .endpoints import router
+
 from .core.database import postgres
+from .endpoints import router
 from .exceptions.api import exception_handlers
 
 _app = None
@@ -40,7 +40,9 @@ class InterceptHandler(logging.Handler):
             frame = frame.f_back
             depth += 1
 
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+        logger.opt(depth=depth, exception=record.exc_info).log(
+            level, record.getMessage()
+        )
 
 
 def set_logging():  # sourcery skip: avoid-builtin-shadow
@@ -51,16 +53,18 @@ def set_logging():  # sourcery skip: avoid-builtin-shadow
         *logging.root.manager.loggerDict.keys(),
         "gunicorn",
         "gunicorn.access",
-        "gunicorn.error"
+        "gunicorn.error",
     ]:
         if name not in seen:
             seen.add(name.split(".")[0])
             logging.getLogger(name).handlers = [intercept_handler]
 
-    _format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
-              "<level>{level: <8}</level> | {process} |" \
-              "<cyan>{name}</cyan>:<cyan>{function}</cyan>:" \
-              "<cyan>{line}</cyan> - <level>{message}</level>"
+    _format = (
+        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+        "<level>{level: <8}</level> | {process} |"
+        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:"
+        "<cyan>{line}</cyan> - <level>{message}</level>"
+    )
     logger.configure(handlers=[{"sink": sys.stdout, "serialize": 0, "format": _format}])
 
 
@@ -89,7 +93,7 @@ def create_app():
         redoc_url=f"{settings.http.path_prefix}/redoc",
         openapi_url=f"{settings.http.path_prefix}/openapi.json",
         exception_handlers=exception_handlers,
-        lifespan=lifespan
+        lifespan=lifespan,
     )
 
     _app.add_middleware(

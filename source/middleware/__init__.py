@@ -1,4 +1,5 @@
 from functools import wraps
+
 from fastapi import APIRouter
 
 from .database import add_database_to_session
@@ -9,19 +10,19 @@ from .session import session
 
 
 def route(
-        router: APIRouter,
-        method: str,
-        path: str,
-        permissions: list[str],
-        requires_auth: bool = True,
-        **kwargs,
+    router: APIRouter,
+    method: str,
+    path: str,
+    permissions: list[str],
+    requires_auth: bool = True,
+    **kwargs,
 ):
     router_type = router.get
-    if method == 'put':
+    if method == "put":
         router_type = router.put
-    if method == 'delete':
+    if method == "delete":
         router_type = router.delete
-    if method == 'post':
+    if method == "post":
         router_type = router.post
 
     def inner(function):

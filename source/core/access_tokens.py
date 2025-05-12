@@ -1,8 +1,8 @@
-import jose
-import jose.jwt
 import datetime
 import secrets
 
+import jose
+import jose.jwt
 from loguru import logger
 
 from source.settings import settings
@@ -40,7 +40,7 @@ def generate_token(data: dict, type: str, ttl: float = 10) -> str:
         token = jose.jwt.encode(
             serializable_payload,
             settings.access_security.secret_key,
-            algorithm=settings.access_security.algorithm
+            algorithm=settings.access_security.algorithm,
         )
         return str(token)
     except Exception as e:

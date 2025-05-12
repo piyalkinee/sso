@@ -1,11 +1,12 @@
-import sys
-import bcrypt
 import asyncio
-import source as s
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.asyncio import AsyncConnection
-from sqlalchemy.orm import sessionmaker
+import sys
+
+import bcrypt
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
+import source as s
 
 email = sys.argv[1]
 password = sys.argv[2]
@@ -14,23 +15,20 @@ name = sys.argv[3]
 DATABASE_URL = f"postgresql+asyncpg://{s.conf['postgres']['user']}:{s.conf['postgres']['password']}@{s.conf['postgres']['host']}/{s.conf['postgres']['database']}"
 
 
-async def create_user(
-        conn: AsyncConnection,
-        email: str,
-        password: str,
-        name: str
-):
+async def create_user(conn: AsyncConnection, email: str, password: str, name: str):
     try:
         async with conn.begin():
             result = await conn.execute(
-                text("""
+                text(
+                    """
                     INSERT INTO 
                         users.users_core 
                         (created_at, updated_at)
                     VALUES 
                         (NOW(), NOW())
                     RETURNING id
-                """)
+                """
+                )
             )
             user_id = result.scalar()
 
@@ -40,33 +38,33 @@ async def create_user(
             password_hash_str = password_hash.decode("utf-8")
 
             await conn.execute(
-                text("""
+                text(
+                    """
                     INSERT INTO 
                         users.users_personal_info 
                         (user_id, name, email)
                     VALUES 
                         (:user_id, :name, :email)
-                """),
-                {
-                    "user_id": user_id,
-                    "name": name,
-                    "email": email
-                }
+                """
+                ),
+                {"user_id": user_id, "name": name, "email": email},
             )
 
             await conn.execute(
-                text("""
+                text(
+                    """
                     INSERT INTO 
                         users.users_security 
                         (user_id, password_hash, password_salt)
                     VALUES 
                         (:user_id, :password_hash, :password_salt)
-                """),
+                """
+                ),
                 {
                     "user_id": user_id,
                     "password_hash": password_hash_str,
-                    "password_salt": password_salt_str
-                }
+                    "password_salt": password_salt_str,
+                },
             )
 
         return user_id

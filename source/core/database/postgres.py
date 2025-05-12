@@ -1,10 +1,9 @@
 import databases
 import sqlalchemy
-
 from sqlalchemy.ext.declarative import declarative_base
 
-from source.settings import settings
 from source.exceptions.database import SessionNotInitializedError
+from source.settings import settings
 
 metadata = sqlalchemy.MetaData()
 Base = declarative_base(metadata=metadata)
@@ -14,7 +13,9 @@ _SESSION: databases.Database | None = None
 
 async def get_connected_session() -> databases.Database:
     s = settings.postgres
-    connection_string = f"postgresql://{s.user}:{s.password}@{s.host}:{s.port}/{s.database}"
+    connection_string = (
+        f"postgresql://{s.user}:{s.password}@{s.host}:{s.port}/{s.database}"
+    )
     res = databases.Database(connection_string)
     await res.connect()
     return res
@@ -39,4 +40,3 @@ async def disconnect() -> None:
     if _SESSION is not None and _SESSION.is_connected:
         await _SESSION.disconnect()
         _SESSION = None
-        

@@ -1,36 +1,37 @@
 from datetime import datetime, timedelta
 
-from loguru import logger
 from databases.core import Connection
+from loguru import logger
 
 from source.settings import settings
-from ..model.queries import users as qusers, tokens as qtokens
-from ..schemas import input as sinput, output as soutput, tokens as saccess, tokens as stokens, users as susers
-from ..core import salt, access_tokens
-from ..exceptions import auth, access
+
+from ..core import access_tokens, salt
+from ..exceptions import access, auth
+from ..model.queries import tokens as qtokens
+from ..model.queries import users as qusers
+from ..schemas import input as sinput
+from ..schemas import output as soutput
+from ..schemas import tokens as saccess
+from ..schemas import tokens as stokens
+from ..schemas import users as susers
 
 
-async def base(
-        data: sinput.BaseInput,
-        database: Connection
-) -> soutput.AccessOutput:
+async def base(data: sinput.BaseInput, database: Connection) -> soutput.AccessOutput:
     logger.debug("Get user data use email")
     user_data: soutput.UserFromEmailOutput = await qusers.get_by_email(
-        database=database,
-        email=data.email
+        database=database, email=data.email
     )
     logger.debug("Verify password")
     verify_result: bool = await salt.verify_password(
         input_password=data.password,
         password_hash=user_data.hash,
-        password_salt=user_data.salt
+        password_salt=user_data.salt,
     )
     if verify_result is False:
         raise access.InvalidPassword
     logger.debug("Get user")
     full_user_data: susers.User = await qusers.get_data_for_token(
-        database=database,
-        id=user_data.id
+        database=database, id=user_data.id
     )
     logger.debug("Generate tokens")
     access_token: str = access_tokens.generate_token(
@@ -40,9 +41,7 @@ async def base(
     )
     refresh_token = access_tokens.generate_token(
         type="refresh",
-        data={
-            "id": user_data.id
-        },
+        data={"id": user_data.id},
         ttl=settings.access_security.access_token_ttl,
     )
     logger.debug("Save token in base")
@@ -51,20 +50,18 @@ async def base(
         token=stokens.TokenCreate(
             access_token=access_token,
             refresh_token=refresh_token,
-            valid_to=datetime.today() + timedelta(minutes=settings.access_security.access_token_ttl),
+            valid_to=datetime.today()
+            + timedelta(minutes=settings.access_security.access_token_ttl),
             user_id=user_data.id,
-        ))
+        ),
+    )
     return soutput.AccessOutput(
-        tokens=soutput.TokensOutput(
-            access=access_token,
-            refresh=refresh_token
-        )
+        tokens=soutput.TokensOutput(access=access_token, refresh=refresh_token)
     )
 
 
 async def refresh(
-        database: Connection = None,
-        data: saccess.RefreshInput = None
+    database: Connection = None, data: saccess.RefreshInput = None
 ) -> saccess.RefreshTokenOutput:
     logger.debug("In command [refresh]")
 
@@ -75,20 +72,19 @@ async def refresh(
 
     logger.debug("Get user")
     full_user_data: susers.User = await qusers.get_data_for_token(
-        database=database,
-        id=decoded["id"]
+        database=database, id=decoded["id"]
     )
     new_access_token = access_tokens.generate_token(
         type="access",
         data=full_user_data.model_dump(),
-        ttl=conf.access_security.access_token_ttl
+        ttl=conf.access_security.access_token_ttl,
     )
 
     try:
         await qtokens.token_refresh(
             database=database,
             refresh_token=data.refresh_token,
-            new_access_token=new_access_token
+            new_access_token=new_access_token,
         )
     except auth.TokenNotFound:
         raise
@@ -96,9 +92,13 @@ async def refresh(
     return saccess.RefreshTokenOutput(access_token=new_access_token)
 
 
-async def revoke(database: Connection = None, refresh_token: str = None) -> saccess.RevokeTokenOutput:
+async def revoke(
+    database: Connection = None, refresh_token: str = None
+) -> saccess.RevokeTokenOutput:
     logger.debug("In command [revoke]")
     try:
-        return await qtokens.token_revoke(database=database, refresh_token=refresh_token)
+        return await qtokens.token_revoke(
+            database=database, refresh_token=refresh_token
+        )
     except auth.TokenNotFound as e:
         raise auth.InvalidCredentialsError from e

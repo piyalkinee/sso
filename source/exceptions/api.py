@@ -30,7 +30,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 
 
 async def request_validation_exception_handler(
-        request: Request, exc: RequestValidationError
+    request: Request, exc: RequestValidationError
 ) -> JSONResponse:
     return JSONResponse(
         status_code=HTTP_422_UNPROCESSABLE_ENTITY,
@@ -44,9 +44,7 @@ async def request_validation_exception_handler(
 
 
 exception_handlers = {}
-exception_handlers.setdefault(
-    HTTPException, http_exception_handler
-)
+exception_handlers.setdefault(HTTPException, http_exception_handler)
 exception_handlers.setdefault(
     RequestValidationError, request_validation_exception_handler
 )

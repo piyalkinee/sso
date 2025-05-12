@@ -9,7 +9,9 @@ class ExecutorNotInitializedError(fastapi.HTTPException):
 class InvalidToken(fastapi.HTTPException):
     """Invalid token provided"""
 
-    def __init__(self, detail="Please ensure the access token is correct and try again."):
+    def __init__(
+        self, detail="Please ensure the access token is correct and try again."
+    ):
         super().__init__(
             status_code=starlette.status.HTTP_400_BAD_REQUEST,
             detail=detail,
@@ -19,7 +21,10 @@ class InvalidToken(fastapi.HTTPException):
 class InvalidCredentialsError(fastapi.HTTPException):
     """Invalid credentials provided."""
 
-    def __init__(self, detail="Please ensure the token is correct or token is not revoked and try again later."):
+    def __init__(
+        self,
+        detail="Please ensure the token is correct or token is not revoked and try again later.",
+    ):
         super().__init__(
             status_code=starlette.status.HTTP_400_BAD_REQUEST,
             detail=detail,
@@ -29,7 +34,9 @@ class InvalidCredentialsError(fastapi.HTTPException):
 class AuthServerUnavailable(fastapi.HTTPException):
     """Raise an attempt to unavailable server response."""
 
-    def __init__(self, detail="Sorry but service is unavailable at the moment. Try again later."):
+    def __init__(
+        self, detail="Sorry but service is unavailable at the moment. Try again later."
+    ):
         super().__init__(
             status_code=starlette.status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=detail,

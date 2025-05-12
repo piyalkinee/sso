@@ -1,12 +1,13 @@
+import importlib
+import inspect
 import os
 import sys
-import uuid
-import inspect
-import importlib
 import traceback
+import uuid
+from functools import wraps
 
 from loguru import logger
-from functools import wraps
+
 from ..exceptions import http
 
 
@@ -19,7 +20,10 @@ def inspect_modules_in_directory(dir_path: str) -> dict:
     module_errors = {}
     for root, _, files in os.walk(dir_path):
         for file in files:
-            if file.endswith(".py") and file not in ("__init__.py", "endpoint_errors.py"):
+            if file.endswith(".py") and file not in (
+                "__init__.py",
+                "endpoint_errors.py",
+            ):
                 module_name = file[:-3]
                 root_dir_name = os.getcwd().split("/")[-1]
                 module_full_name = f"{root_dir_name}.exceptions.{module_name}"
@@ -63,7 +67,10 @@ def exception_handler(function):
             # Raise 500 error if module is not found
             raise http.HTTPInternalError(
                 detail=dict(
-                    message=str(exc_value), x_code=x_code, name=error_name, doc=str(error_doc)
+                    message=str(exc_value),
+                    x_code=x_code,
+                    name=error_name,
+                    doc=str(error_doc),
                 )
             ) from e
 

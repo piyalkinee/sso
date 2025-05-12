@@ -1,9 +1,12 @@
-from loguru import logger
 from fastapi import APIRouter
+from loguru import logger
 
 from ...commands import access as caccess
-from ...schemas import input as sinput, output as soutput, middleware as smiddleware
-from ...middleware import session as mvsession, route
+from ...middleware import route
+from ...middleware import session as mvsession
+from ...schemas import input as sinput
+from ...schemas import middleware as smiddleware
+from ...schemas import output as soutput
 
 router: APIRouter = APIRouter()
 middleware_router = lambda method, path, **kwargs: route(router, method, path, **kwargs)
@@ -15,16 +18,12 @@ middleware_router = lambda method, path, **kwargs: route(router, method, path, *
     summary=f"Get access and refresh tokens",
     response_model=soutput.AccessOutput,
     requires_auth=False,
-    permissions=[]
+    permissions=[],
 )
 async def base(
-        data: sinput.BaseInput,
-        session: smiddleware.Session = mvsession
+    data: sinput.BaseInput, session: smiddleware.Session = mvsession
 ) -> soutput.AccessOutput:
-    """ Description """
+    """Description"""
 
     logger.debug("In endpoint [base]")
-    return await caccess.base(
-        database=session.db,
-        data=data
-    )
+    return await caccess.base(database=session.db, data=data)
