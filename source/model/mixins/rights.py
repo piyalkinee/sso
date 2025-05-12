@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, Text
 from sqlalchemy.orm import declarative_mixin, declared_attr
 
-from .time_stamp import TimestampMixin
 from .activation import ActivationMixin
+from .time_stamp import TimestampMixin
 
 
 @declarative_mixin
