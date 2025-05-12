@@ -4,7 +4,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from source.core.database.postgres import Base
-from source.configuration import conf
+from source.settings import conf
 
 config = context.config
 

@@ -1,4 +1,4 @@
 from .app import create_app
-from .configuration import conf
+from .settings import settings
 
 app = create_app()

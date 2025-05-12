@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import importlib.metadata
 
 import fastapi
 import starlette.requests
@@ -9,21 +10,14 @@ from loguru import logger
 from setproctitle import setproctitle
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import configuration
+from source.settings import settings
 from .endpoints import router
 from .core.database import postgres
 from .exceptions.api import exception_handlers
 
 _app = None
 
-current_directory = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_directory, '..'))
-os.environ['PATH'] += os.pathsep + project_root
-
-ROOT_DIR: str = os.environ['PATH'].split(":")[-1] + "/"
-
-with open(ROOT_DIR + "VERSION_SSO") as f:
-    VERSION = f.readlines()[0]
+VERSION = importlib.metadata.version("source")
 
 
 async def logging_dependency(request: starlette.requests.Request):
@@ -51,7 +45,7 @@ class InterceptHandler(logging.Handler):
 
 def set_logging():  # sourcery skip: avoid-builtin-shadow
     intercept_handler = InterceptHandler()
-    logging.root.setLevel(configuration.conf['log_level'])
+    logging.root.setLevel(settings.log_level)
     seen = set()
     for name in [
         *logging.root.manager.loggerDict.keys(),
@@ -89,11 +83,11 @@ def create_app():
 
     _app = fastapi.FastAPI(
         title="Single SignOn API",
-        debug=configuration.conf['debug'],
+        debug=settings.debug,
         version=VERSION,
-        docs_url=f"{configuration.conf['http']['path_prefix']}/docs",
-        redoc_url=f"{configuration.conf['http']['path_prefix']}/redoc",
-        openapi_url=f"{configuration.conf['http']['path_prefix']}/openapi.json",
+        docs_url=f"{settings.http.path_prefix}/docs",
+        redoc_url=f"{settings.http.path_prefix}/redoc",
+        openapi_url=f"{settings.http.path_prefix}/openapi.json",
         exception_handlers=exception_handlers,
         lifespan=lifespan
     )
@@ -108,7 +102,7 @@ def create_app():
 
     _app.include_router(
         router,
-        prefix=configuration.conf['http']['path_prefix'],
+        prefix=settings.http.path_prefix,
         dependencies=[fastapi.Depends(logging_dependency)],
     )
 

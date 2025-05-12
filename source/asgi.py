@@ -10,7 +10,7 @@ from gunicorn.glogging import Logger
 from gunicorn import sock
 from loguru import logger
 
-from . import configuration
+from . import settings
 
 uvicorn.server.HANDLED_SIGNALS = (
     signal.SIGINT,  # Unix signal 2. Sent by Ctrl+C.
@@ -138,10 +138,9 @@ def start_app(app, **kwargs):
 def run():
     start_app(
         app="source:app",
-        bind=f"{configuration.conf['api']['host']}:{configuration.conf['api']['port']}",
-        workers=configuration.conf['workers'],
+        bind=f"{settings.api.host}:{settings.api.port}",
+        workers=settings.workers,
         proc_name="sso",
-        loglevel=configuration.conf['log_level'],
-        reload=configuration.conf['debug'],
-
+        loglevel=settings.log_level,
+        reload=settings.debug,
     )

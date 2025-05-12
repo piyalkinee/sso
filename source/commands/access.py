@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 from loguru import logger
 from databases.core import Connection
 
+from source.settings import settings
 from ..model.queries import users as qusers, tokens as qtokens
 from ..schemas import input as sinput, output as soutput, tokens as saccess, tokens as stokens, users as susers
 from ..core import salt, access_tokens
-from ..configuration import conf
 from ..exceptions import auth, access
 
 
@@ -36,14 +36,14 @@ async def base(
     access_token: str = access_tokens.generate_token(
         type="access",
         data=full_user_data.model_dump(),
-        ttl=conf['access_security']['access_token_ttl']
+        ttl=settings.access_security.access_token_ttl,
     )
     refresh_token = access_tokens.generate_token(
         type="refresh",
         data={
             "id": user_data.id
         },
-        ttl=conf['access_security']['refresh_token_ttl']
+        ttl=settings.access_security.access_token_ttl,
     )
     logger.debug("Save token in base")
     await qtokens.create(
@@ -51,7 +51,7 @@ async def base(
         token=stokens.TokenCreate(
             access_token=access_token,
             refresh_token=refresh_token,
-            valid_to=datetime.today() + timedelta(minutes=conf['access_security']['access_token_ttl']),
+            valid_to=datetime.today() + timedelta(minutes=settings.access_security.access_token_ttl),
             user_id=user_data.id,
         ))
     return soutput.AccessOutput(

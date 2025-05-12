@@ -3,8 +3,8 @@ import sqlalchemy
 
 from sqlalchemy.ext.declarative import declarative_base
 
-from ...configuration import conf
-from ...exceptions.database import SessionNotInitializedError
+from source.settings import settings
+from source.exceptions.database import SessionNotInitializedError
 
 metadata = sqlalchemy.MetaData()
 Base = declarative_base(metadata=metadata)
@@ -13,8 +13,8 @@ _SESSION: databases.Database | None = None
 
 
 async def get_connected_session() -> databases.Database:
-    c = conf['postgres']
-    connection_string = f"postgresql://{c['user']}:{c['password']}@{c['host']}:{c['port']}/{c['database']}"
+    s = settings.postgres
+    connection_string = f"postgresql://{s.user}:{s.password}@{s.host}:{s.port}/{s.database}"
     res = databases.Database(connection_string)
     await res.connect()
     return res
