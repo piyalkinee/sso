@@ -7,9 +7,7 @@ from source.settings import settings
 config = context.config
 
 db = settings.postgres
-connection_string = (
-    f"postgresql://{db.user}:{db.password}@{db.host}:{db.port}/{db.database}"
-)
+connection_string = f"postgresql://{db.user}:{db.password}@{db.host}:{db.port}/{db.database}"
 config.set_main_option("sqlalchemy.url", connection_string)
 
 

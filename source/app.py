@@ -9,9 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from setproctitle import setproctitle
 
+from source.core.database.postgres import check_db_connection
 from source.settings import settings
 
-from .core.database import postgres
 from .endpoints import router
 from .exceptions.api import exception_handlers
 
@@ -40,9 +40,7 @@ class InterceptHandler(logging.Handler):
             frame = frame.f_back
             depth += 1
 
-        logger.opt(depth=depth, exception=record.exc_info).log(
-            level, record.getMessage()
-        )
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
 def set_logging():  # sourcery skip: avoid-builtin-shadow
@@ -74,16 +72,16 @@ def create_app():
         return _app
 
     async def lifespan(app: fastapi.FastAPI):
-        # Startup
         setproctitle("sso:master")
         logger.warning(f"process {os.getpid()}")
         set_logging()
-        await postgres.connect()
-
-        yield
-
-        # Shutdown
-        await postgres.disconnect()
+        try:
+            await check_db_connection()
+            logger.info("Connection to the database is established")
+            yield
+        except Exception as e:
+            logger.error(f"Database connection error: {e}")
+            raise e
 
     _app = fastapi.FastAPI(
         title="Single SignOn API",

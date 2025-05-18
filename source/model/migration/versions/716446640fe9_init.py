@@ -29,16 +29,10 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("name", sa.Text(), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
-        sa.Column(
-            "is_active", sa.Boolean(), server_default=sa.text("'false'"), nullable=False
-        ),
-        sa.Column(
-            "active_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
+        sa.Column("is_active", sa.Boolean(), server_default=sa.text("'false'"), nullable=False),
+        sa.Column("active_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("inactive_at", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         schema="rights",
@@ -48,16 +42,10 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("name", sa.Text(), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
-        sa.Column(
-            "is_active", sa.Boolean(), server_default=sa.text("'false'"), nullable=False
-        ),
-        sa.Column(
-            "active_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
+        sa.Column("is_active", sa.Boolean(), server_default=sa.text("'false'"), nullable=False),
+        sa.Column("active_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("inactive_at", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         schema="rights",
@@ -65,9 +53,7 @@ def upgrade() -> None:
     op.create_table(
         "users_core",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         schema="users",
@@ -85,13 +71,9 @@ def upgrade() -> None:
         ),
         sa.Column("access_token", sa.Text(), nullable=False),
         sa.Column("refresh_token", sa.Text(), nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.users_core.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.users_core.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         schema="access",
     )
@@ -99,9 +81,7 @@ def upgrade() -> None:
         "group_claims",
         sa.Column("group_id", sa.Integer(), nullable=False),
         sa.Column("claim_id", sa.Integer(), nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(["claim_id"], ["rights.claims.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["group_id"], ["rights.groups.id"], ondelete="CASCADE"),
@@ -112,14 +92,10 @@ def upgrade() -> None:
         "user_groups",
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("group_id", sa.Integer(), nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(["group_id"], ["rights.groups.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.users_core.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.users_core.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("user_id", "group_id"),
         schema="relations",
     )
@@ -137,9 +113,7 @@ def upgrade() -> None:
             server_default=sa.text("'en'"),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.users_core.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.users_core.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("email"),
         sa.UniqueConstraint("phone_number"),
@@ -152,18 +126,12 @@ def upgrade() -> None:
         sa.Column("password_hash", sa.Text(), nullable=True),
         sa.Column("password_salt", sa.Text(), nullable=True),
         sa.Column("ban_message", sa.Text(), nullable=True),
-        sa.Column(
-            "is_banned", sa.Boolean(), server_default=sa.text("'false'"), nullable=False
-        ),
+        sa.Column("is_banned", sa.Boolean(), server_default=sa.text("'false'"), nullable=False),
         sa.Column("login_ip", sa.String(length=15), nullable=True),
-        sa.Column(
-            "login_count", sa.Integer(), server_default=sa.text("0"), nullable=False
-        ),
+        sa.Column("login_count", sa.Integer(), server_default=sa.text("0"), nullable=False),
         sa.Column("login_at", sa.DateTime(), nullable=True),
         sa.Column("banned_at", sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.users_core.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.users_core.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         schema="users",
     )

@@ -9,9 +9,7 @@ class TokensInfo(Base, TimestampMixin):
     __table_args__ = {"schema": "access"}
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(
-        Integer, ForeignKey("users.users_core.id", ondelete="CASCADE"), nullable=False
-    )
+    user_id = Column(Integer, ForeignKey("users.users_core.id", ondelete="CASCADE"), nullable=False)
     is_revoked = Column(Boolean, nullable=False, default=False, server_default="false")
     valid_to = Column(
         DateTime,

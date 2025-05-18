@@ -12,9 +12,7 @@ async def create_password_salt(password: str) -> tuple:
     return password_hash_str, password_salt_str
 
 
-async def verify_password(
-    input_password: str, password_hash: str, password_salt: str
-) -> bool:
+async def verify_password(input_password: str, password_hash: str, password_salt: str) -> bool:
     try:
         password_salt = password_salt.encode("utf-8")
         password_hash = password_hash.encode("utf-8")

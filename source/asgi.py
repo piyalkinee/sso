@@ -31,9 +31,7 @@ class InterceptHandler(logging.Handler):
             frame = frame.f_back
             depth += 1
 
-        logger.opt(depth=depth, exception=record.exc_info).log(
-            level, record.getMessage()
-        )
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
 class StubbedGunicornLogger(Logger):
@@ -52,11 +50,7 @@ class ABArbiter(Arbiter):
         raise StopIteration
 
     def stop(self, graceful=True):
-        unlink = (
-            self.reexec_pid == self.master_pid == 0
-            and not self.systemd
-            and not self.cfg.reuse_port
-        )
+        unlink = self.reexec_pid == self.master_pid == 0 and not self.systemd and not self.cfg.reuse_port
         sock.close_sockets(self.LISTENERS, unlink)
         self.LISTENERS = []
         sig = signal.SIGALRM
@@ -76,11 +70,7 @@ class StandaloneApplication(BaseApplication):
         super().__init__()
 
     def load_config(self):
-        config = {
-            key: value
-            for key, value in self.options.items()
-            if key in self.cfg.settings and value is not None
-        }
+        config = {key: value for key, value in self.options.items() if key in self.cfg.settings and value is not None}
         for key, value in config.items():
             self.cfg.set(key.lower(), value)
 
@@ -127,7 +117,7 @@ def start_app(app, **kwargs):
     StubbedGunicornLogger.loglevel = options["loglevel"]
     options = {
         "bind": "0.0.0.0:8001",
-        "workers": 2,
+        "workers": 4,
         "access_log": "-",
         "error_log": "-",
         "worker_class": "uvicorn.workers.UvicornWorker",

@@ -15,7 +15,7 @@ name = sys.argv[3]
 
 db = settings.postgres
 DATABASE_URL = f"postgresql://{db.user}:{db.password}@{db.host}:{db.port}/{db.database}"
-engine = create_engine(DATABASE_URL, echo=False)
+engine = create_engine(DATABASE_URL, echo=False)  # To change db logs use True on echo
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -52,6 +52,7 @@ def main():
         print(f"\033[31mUser creation error: {e}\033[0m")
     finally:
         session.close()
+
 
 if __name__ == "__main__":
     main()

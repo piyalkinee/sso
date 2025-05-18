@@ -2,14 +2,13 @@ from asyncpg import PostgresError
 from databases.core import Connection
 from loguru import logger
 
-from ...exceptions.auth import TokenAlreadyStored, TokenNotFound
-from ...exceptions.database import DatabaseError
-from ...schemas import tokens as stokens
+from source.exceptions.auth import TokenAlreadyStored, TokenNotFound
+from source.exceptions.database import DatabaseError
+from source.model.entities.access.tokens_info import TokensInfo
+from source.schemas import tokens as stokens
 
 
-async def create(
-    database: Connection = None, token: stokens.TokenCreate = None
-) -> stokens.TokenGet:
+async def create(database: Connection = None, token: stokens.TokenCreate = None) -> stokens.TokenGet:
     logger.debug("in model [token_create]")
     try:
         query = f"""
@@ -37,9 +36,7 @@ async def create(
         raise TokenAlreadyStored from e
 
 
-async def revoke(
-    database: Connection = None, refresh_token: str = None
-) -> stokens.RevokeTokenOutput:
+async def revoke(database: Connection = None, refresh_token: str = None) -> stokens.RevokeTokenOutput:
     logger.debug("In model [token_revoke]")
     try:
         logger.warning(refresh_token)

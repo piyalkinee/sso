@@ -8,9 +8,7 @@ CONF_PATH = BASE_DIR / "sso.conf"
 
 
 class EnvironmentConfig(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=CONF_PATH, env_file_encoding="utf-8", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=CONF_PATH, env_file_encoding="utf-8", extra="ignore")
 
 
 class APIConfig(EnvironmentConfig):

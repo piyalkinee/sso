@@ -7,9 +7,7 @@ from ...schemas import output as soutput
 from ...schemas import users as susers
 
 
-async def get_by_email(
-    database: Connection = None, email: str = None
-) -> soutput.UserFromEmailOutput:
+async def get_by_email(database: Connection = None, email: str = None) -> soutput.UserFromEmailOutput:
     try:
         logger.debug(f"In model [get_by_email], email: {email}")
         user_data = await database.fetch_one(
@@ -39,9 +37,7 @@ async def get_by_email(
         raise DatabaseError from e
 
 
-async def get_data_for_token(
-    database: Connection = None, id: int = None
-) -> susers.User:
+async def get_data_for_token(database: Connection = None, id: int = None) -> susers.User:
     try:
         logger.debug(f"In model [get], id: {id}")
         rows = await database.fetch_all(
