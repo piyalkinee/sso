@@ -1,22 +1,17 @@
+import asyncio
 import logging
 import signal
 import sys
-import time
 
 import uvicorn.server
-from gunicorn import sock
-from gunicorn.app.base import BaseApplication
-from gunicorn.arbiter import Arbiter
-from gunicorn.glogging import Logger
 from loguru import logger
 
-from . import settings
+from hypercorn.asyncio import serve
+from hypercorn.config import Config
 
-uvicorn.server.HANDLED_SIGNALS = (
-    signal.SIGINT,  # Unix signal 2. Sent by Ctrl+C.
-    signal.SIGTERM,  # Unix signal 15. Sent by `kill <pid>`.
-    signal.SIGALRM,
-)
+from source import app
+
+from . import settings
 
 
 class InterceptHandler(logging.Handler):
@@ -34,108 +29,61 @@ class InterceptHandler(logging.Handler):
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
-class StubbedGunicornLogger(Logger):
-    def setup(self, cfg):
-        handler = logging.NullHandler()
-        error_logger = logging.getLogger("gunicorn.error")
-        error_logger.addHandler(handler)
-        access_logger = logging.getLogger("gunicorn.access")
-        access_logger.addHandler(handler)
-        self.error_log.setLevel(self.loglevel)
-        self.access_log.setLevel(self.loglevel)
+def setup_logging(level="DEBUG"):
+    # Устанавливаем уровень root логгера
+    logging.root.handlers = []
+    logging.root.setLevel(level)
 
-
-class ABArbiter(Arbiter):
-    def handle_int(self):
-        raise StopIteration
-
-    def stop(self, graceful=True):
-        unlink = self.reexec_pid == self.master_pid == 0 and not self.systemd and not self.cfg.reuse_port
-        sock.close_sockets(self.LISTENERS, unlink)
-        self.LISTENERS = []
-        sig = signal.SIGALRM
-        if not graceful:
-            sig = signal.SIGQUIT
-        limit = time.time() + self.cfg.graceful_timeout
-        self.kill_workers(sig)
-        while self.WORKERS and time.time() < limit:
-            time.sleep(0.1)
-        self.kill_workers(signal.SIGKILL)
-
-
-class StandaloneApplication(BaseApplication):
-    def __init__(self, app, options=None):
-        self.options = options or {}
-        self.application = app
-        super().__init__()
-
-    def load_config(self):
-        config = {key: value for key, value in self.options.items() if key in self.cfg.settings and value is not None}
-        for key, value in config.items():
-            self.cfg.set(key.lower(), value)
-
-    def load(self):
-        return self.application
-
-    def run(self):
-        try:
-            arbiter = ABArbiter(self)
-            arbiter.run()
-        except RuntimeError as e:
-            logger.error(f"Error: {e}")
-            sys.exit(1)
-
-
-def start_app(app, **kwargs):
-    options = kwargs if kwargs else {}
     intercept_handler = InterceptHandler()
-    logging.root.setLevel(options["loglevel"])
 
-    seen = set()
-
-    for name in [
-        *logging.root.manager.loggerDict.keys(),
-        "gunicorn",
-        "gunicorn.access",
-        "gunicorn.error",
+    targets = [
         "uvicorn",
         "uvicorn.access",
         "uvicorn.error",
-    ]:
-        if name not in seen:
-            seen.add(name.split(".")[0])
-            logging.getLogger(name).handlers = [intercept_handler]
+        "hypercorn",
+        "hypercorn.access",
+        "hypercorn.error",
+        "asyncio",
+    ]
 
-    _format = (
-        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-        "<level>{level: <8}</level> | {process} |"
-        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:"
-        "<cyan>{line}</cyan> - <level>{message}</level>"
+    for name in targets:
+        logging_logger = logging.getLogger(name)
+        logging_logger.handlers = [intercept_handler]
+        logging_logger.propagate = False  # чтобы не было дублей
+        logging_logger.setLevel(level)
+
+    logger.configure(
+        handlers=[{
+            "sink": sys.stdout,
+            "format": (
+                "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+                "<level>{level: <8}</level> | {process} | "
+                "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+                "<level>{message}</level>"
+            ),
+            "level": level
+        }]
     )
-    logger.configure(handlers=[{"sink": sys.stdout, "serialize": 0, "format": _format}])
 
-    StubbedGunicornLogger.loglevel = options["loglevel"]
-    options = {
-        "bind": "0.0.0.0:8001",
-        "workers": 4,
-        "access_log": "-",
-        "error_log": "-",
-        "worker_class": "uvicorn.workers.UvicornWorker",
-        "logger_class": StubbedGunicornLogger,
-        "graceful_timeout": 30,
-        "proc_name": "sso",
-        **options,
-    }
-
-    StandaloneApplication(app, options).run()
 
 
 def run():
-    start_app(
-        app="source:app",
-        bind=f"{settings.api.host}:{settings.api.port}",
-        workers=settings.workers,
-        proc_name="sso",
-        loglevel=settings.log_level,
-        reload=settings.debug,
-    )
+    setup_logging(settings.log_level.upper())
+
+    config = Config()
+    config.bind = [f"{settings.api.host}:{settings.api.port}"]
+    config.workers = settings.workers
+    config.loglevel = settings.log_level.lower()
+    config.use_reloader = settings.debug
+    config.errorlog = "-"
+    config.accesslog = "-"
+
+    # QUIC (если нужны HTTP/3)
+    # if settings.tls_enabled:
+    #     config.certfile = settings.certfile
+    #     config.keyfile = settings.keyfile
+    #     config.quic_bind = [f"{settings.api.host}:{settings.api.port}"]
+    #     config.alpn_protocols = ["h3", "http/1.1"]
+
+    logger.info("🚀 Starting Hypercorn server...")
+    asyncio.run(serve(app, config))
