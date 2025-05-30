@@ -10,6 +10,7 @@ from source.settings import settings
 class AsyncLoguruLogger:
     def __init__(self, config):
         self.config = config
+
     async def info(self, message, *args, **kwargs):
         logger.info(message)
 
@@ -52,7 +53,7 @@ async def logging_dependency(request: starlette.requests.Request):
     logger.debug(f"Headers: {headers}")
 
 
-def set_logging():  # sourcery skip: avoid-builtin-shadow
+def set_logging():
     intercept_handler = InterceptHandler()
     logging.root.setLevel(settings.log_level)
     seen = set()
@@ -69,8 +70,10 @@ def set_logging():  # sourcery skip: avoid-builtin-shadow
         "hypercorn.error",
     ]:
         if name not in seen:
-            seen.add(name.split(".")[0])
-            logging.getLogger(name).handlers = [intercept_handler]
+            seen.add(name)
+            logger_ = logging.getLogger(name)
+            logger_.handlers = [intercept_handler]
+            logger_.propagate = False
 
     _format = (
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "

@@ -12,21 +12,21 @@ async def get_by_email(database: Connection = None, email: str = None) -> soutpu
         logger.debug(f"In model [get_by_email], email: {email}")
         user_data = await database.fetch_one(
             """
-            SELECT 
-                upi.user_id as id,
-                us.password_hash as hash,
-                us.password_salt as salt
-            FROM 
-                users.users_personal_info AS upi
-            JOIN
-                users.users_security as us
-            ON
-                upi.user_id = us.user_id
-            WHERE 
-                upi.email = :email 
-            AND 
-                us.is_banned = false
-        """,
+                SELECT 
+                    upi.user_id as id,
+                    us.password_hash as hash,
+                    us.password_salt as salt
+                FROM 
+                    users.users_personal_info AS upi
+                JOIN
+                    users.users_security as us
+                ON
+                    upi.user_id = us.user_id
+                WHERE 
+                    upi.email = :email 
+                AND 
+                    us.is_banned = false
+            """,
             {"email": email},
         )
         if user_data is None:

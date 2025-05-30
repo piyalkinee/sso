@@ -1,12 +1,10 @@
 import asyncio
 
-from loguru import logger
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
+from loguru import logger
 
-from source import app
-
-from source import settings
+from source import app, settings
 from source.logger import AsyncLoguruLogger
 
 
