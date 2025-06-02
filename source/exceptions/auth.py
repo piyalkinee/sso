@@ -19,7 +19,10 @@ class InvalidToken(fastapi.HTTPException):
 class InvalidCredentialsError(fastapi.HTTPException):
     """Invalid credentials provided."""
 
-    def __init__(self, detail="Please ensure the token is correct or token is not revoked and try again later."):
+    def __init__(
+        self,
+        detail="Please ensure the token is correct or token is not revoked and try again later.",
+    ):
         super().__init__(
             status_code=starlette.status.HTTP_400_BAD_REQUEST,
             detail=detail,

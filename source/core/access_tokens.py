@@ -1,11 +1,11 @@
-import jose
-import jose.jwt
 import datetime
 import secrets
 
+import jose
+import jose.jwt
 from loguru import logger
 
-from ..configuration import conf
+from source.settings import settings
 
 
 def generate_token(data: dict, type: str, ttl: float = 10) -> str:
@@ -39,8 +39,8 @@ def generate_token(data: dict, type: str, ttl: float = 10) -> str:
     try:
         token = jose.jwt.encode(
             serializable_payload,
-            conf['access_security']['secret_key'],
-            algorithm=conf['access_security']['algorithm'],
+            settings.access_security.secret_key,
+            algorithm=settings.access_security.algorithm,
         )
         return str(token)
     except Exception as e:
@@ -53,8 +53,8 @@ def decode_token(token: str) -> dict[str, str]:
     try:
         data = jose.jwt.decode(
             token,
-            conf.access_security.secret_key,
-            algorithms=conf.access_security.algorithm,
+            settings.access_security.secret_key,
+            algorithms=settings.access_security.algorithm,
         )
         return dict(data)
     except jose.JWTError as e:

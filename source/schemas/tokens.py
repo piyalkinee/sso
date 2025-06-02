@@ -1,6 +1,6 @@
 from datetime import datetime
-from pydantic import BaseModel, field_validator
 
+from pydantic import BaseModel
 
 # INPUT
 # ----------------------------------------------------------------------------------------------------------------------
@@ -17,6 +17,7 @@ class RevokeTokenInput(BaseModel):
 # OUTPUT
 # ----------------------------------------------------------------------------------------------------------------------
 
+
 class RefreshTokenOutput(BaseModel):
     result: bool = True
     access_token: str = None
@@ -32,6 +33,7 @@ class ChangePasswordOutput(BaseModel):
 
 
 # TOKEN
+
 
 class TokenGet(BaseModel):
     is_revoked: bool = None

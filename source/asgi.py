@@ -1,16 +1,16 @@
-import sys
 import logging
 import signal
+import sys
 import time
-import uvicorn.server
 
+import uvicorn.server
+from gunicorn import sock
 from gunicorn.app.base import BaseApplication
 from gunicorn.arbiter import Arbiter
 from gunicorn.glogging import Logger
-from gunicorn import sock
 from loguru import logger
 
-from . import configuration
+from . import settings
 
 uvicorn.server.HANDLED_SIGNALS = (
     signal.SIGINT,  # Unix signal 2. Sent by Ctrl+C.
@@ -50,11 +50,7 @@ class ABArbiter(Arbiter):
         raise StopIteration
 
     def stop(self, graceful=True):
-        unlink = (
-                self.reexec_pid == self.master_pid == 0
-                and not self.systemd
-                and not self.cfg.reuse_port
-        )
+        unlink = self.reexec_pid == self.master_pid == 0 and not self.systemd and not self.cfg.reuse_port
         sock.close_sockets(self.LISTENERS, unlink)
         self.LISTENERS = []
         sig = signal.SIGALRM
@@ -74,10 +70,7 @@ class StandaloneApplication(BaseApplication):
         super().__init__()
 
     def load_config(self):
-        config = {
-            key: value for key, value in self.options.items()
-            if key in self.cfg.settings and value is not None
-        }
+        config = {key: value for key, value in self.options.items() if key in self.cfg.settings and value is not None}
         for key, value in config.items():
             self.cfg.set(key.lower(), value)
 
@@ -113,16 +106,18 @@ def start_app(app, **kwargs):
             seen.add(name.split(".")[0])
             logging.getLogger(name).handlers = [intercept_handler]
 
-    _format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
-              "<level>{level: <8}</level> | {process} |" \
-              "<cyan>{name}</cyan>:<cyan>{function}</cyan>:" \
-              "<cyan>{line}</cyan> - <level>{message}</level>"
+    _format = (
+        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+        "<level>{level: <8}</level> | {process} |"
+        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:"
+        "<cyan>{line}</cyan> - <level>{message}</level>"
+    )
     logger.configure(handlers=[{"sink": sys.stdout, "serialize": 0, "format": _format}])
 
     StubbedGunicornLogger.loglevel = options["loglevel"]
     options = {
         "bind": "0.0.0.0:8001",
-        "workers": 2,
+        "workers": 4,
         "access_log": "-",
         "error_log": "-",
         "worker_class": "uvicorn.workers.UvicornWorker",
@@ -138,10 +133,9 @@ def start_app(app, **kwargs):
 def run():
     start_app(
         app="source:app",
-        bind=f"{configuration.conf['api']['host']}:{configuration.conf['api']['port']}",
-        workers=configuration.conf['workers'],
+        bind=f"{settings.api.host}:{settings.api.port}",
+        workers=settings.workers,
         proc_name="sso",
-        loglevel=configuration.conf['log_level'],
-        reload=configuration.conf['debug'],
-
+        loglevel=settings.log_level,
+        reload=settings.debug,
     )

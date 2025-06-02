@@ -1,5 +1,7 @@
 from sqlalchemy import *
-from ....core.database.postgres import Base
+
+from source.core.database.postgres import Base
+
 
 class UsersPersonalInfo(Base):
     __tablename__ = "users_personal_info"

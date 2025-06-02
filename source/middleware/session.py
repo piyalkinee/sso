@@ -1,14 +1,9 @@
-from fastapi import Request, Depends
+from fastapi import Request
 from loguru import logger
 
-from ..schemas import middleware
+from source.schemas import middleware
 
 
-async def _session(
-        request: Request = None
-) -> middleware.Session:
+async def _session(request: Request = None) -> middleware.Session:
     logger.info(f"Setup session {request}")
     return middleware.Session(request=request)
-
-
-session = Depends(_session)

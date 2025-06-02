@@ -1,15 +1,13 @@
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 from source.core.database.postgres import Base
-from source.configuration import conf
+from source.settings import settings
 
 config = context.config
 
-c = conf['postgres']
-connection_string = f"postgresql://{c['user']}:{c['password']}@{c['host']}:{c['port']}/{c['database']}"
+db = settings.postgres
+connection_string = f"postgresql://{db.user}:{db.password}@{db.host}:{db.port}/{db.database}"
 config.set_main_option("sqlalchemy.url", connection_string)
 
 
@@ -31,7 +29,7 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
         include_schemas=True,
         include_name=include_name,
-        compare_type=True
+        compare_type=True,
     )
 
     with context.begin_transaction():
@@ -50,7 +48,7 @@ def run_migrations_online() -> None:
             connection=connection,
             include_schemas=True,
             include_name=include_name,
-            target_metadata=target_metadata
+            target_metadata=target_metadata,
         )
 
         with context.begin_transaction():

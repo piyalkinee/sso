@@ -1,18 +1,17 @@
-from loguru import logger
-from databases.core import Connection
 from asyncpg import PostgresError
+from databases.core import Connection
+from loguru import logger
 
-from ...exceptions.database import ItemNotFoundError, DatabaseError
-from ...schemas import users as susers, output as soutput
+from ...exceptions.database import DatabaseError, ItemNotFoundError
+from ...schemas import output as soutput
+from ...schemas import users as susers
 
 
-async def get_by_email(
-        database: Connection = None,
-        email: str = None
-) -> soutput.UserFromEmailOutput:
+async def get_by_email(database: Connection = None, email: str = None) -> soutput.UserFromEmailOutput:
     try:
         logger.debug(f"In model [get_by_email], email: {email}")
-        user_data = await database.fetch_one("""
+        user_data = await database.fetch_one(
+            """
             SELECT 
                 upi.user_id as id,
                 us.password_hash as hash,
@@ -27,7 +26,9 @@ async def get_by_email(
                 upi.email = :email 
             AND 
                 us.is_banned = false
-        """, {"email": email})
+        """,
+            {"email": email},
+        )
         if user_data is None:
             raise ItemNotFoundError
         return soutput.UserFromEmailOutput(**dict(user_data))
@@ -36,13 +37,11 @@ async def get_by_email(
         raise DatabaseError from e
 
 
-async def get_data_for_token(
-        database: Connection = None,
-        id: int = None
-) -> susers.User:
+async def get_data_for_token(database: Connection = None, id: int = None) -> susers.User:
     try:
         logger.debug(f"In model [get], id: {id}")
-        rows = await database.fetch_all(f"""
+        rows = await database.fetch_all(
+            f"""
             SELECT 
                 ucore.id AS id,
                 ucore.created_at AS created_at,
@@ -72,9 +71,9 @@ async def get_data_for_token(
                 ucore.id = :user_id
             ORDER BY 
                 g.id, c.id;
-        """, {
-            "user_id": id
-        })
+        """,
+            {"user_id": id},
+        )
         if not rows:
             raise ItemNotFoundError
         first_row = rows[0]
@@ -83,7 +82,7 @@ async def get_data_for_token(
             phone_number=first_row["phone_number"],
             telegram_username=first_row["telegram_username"],
             email=first_row["email"],
-            language=first_row["language"]
+            language=first_row["language"],
         )
         groups_dict = {}
         for row in rows:
@@ -91,17 +90,12 @@ async def get_data_for_token(
             group_name = row["group_name"]
             claim_name = row["claim_name"]
             if group_id not in groups_dict:
-                groups_dict[group_id] = {
-                    "name": group_name,
-                    "claims": []
-                }
+                groups_dict[group_id] = {"name": group_name, "claims": []}
             if claim_name and claim_name not in groups_dict[group_id]["claims"]:
                 groups_dict[group_id]["claims"].append(claim_name)
         user_groups = [
-            susers.UserGroup(
-                name=group_data["name"],
-                claims=group_data["claims"]
-            ) for group_data in groups_dict.values()
+            susers.UserGroup(name=group_data["name"], claims=group_data["claims"])
+            for group_data in groups_dict.values()
         ]
         return susers.User(
             id=first_row["id"],
@@ -109,7 +103,7 @@ async def get_data_for_token(
             updated_at=first_row["updated_at"],
             info=user_info,
             groups=user_groups,
-            claims=[]
+            claims=[],
         )
     except PostgresError as e:
         logger.warning(e)

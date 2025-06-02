@@ -7,5 +7,5 @@ ERRORS_SCHEMAS = {
     "404": {"model": HTTP404},
     "409": {"model": HTTP409},
     "422": {"model": HTTP422},
-    "503": {"model": HTTP503}
+    "503": {"model": HTTP503},
 }

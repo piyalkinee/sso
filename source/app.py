@@ -1,29 +1,23 @@
+import importlib.metadata
+import logging
 import os
 import sys
-import logging
 
 import fastapi
 import starlette.requests
-
+from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from setproctitle import setproctitle
-from fastapi.middleware.cors import CORSMiddleware
 
-from . import configuration
+from source.core.database.postgres import check_db_connection
+from source.settings import settings
+
 from .endpoints import router
-from .core.database import postgres
 from .exceptions.api import exception_handlers
 
 _app = None
 
-current_directory = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_directory, '..'))
-os.environ['PATH'] += os.pathsep + project_root
-
-ROOT_DIR: str = os.environ['PATH'].split(":")[-1] + "/"
-
-with open(ROOT_DIR + "VERSION_SSO") as f:
-    VERSION = f.readlines()[0]
+VERSION = importlib.metadata.version("source")
 
 
 async def logging_dependency(request: starlette.requests.Request):
@@ -51,22 +45,24 @@ class InterceptHandler(logging.Handler):
 
 def set_logging():  # sourcery skip: avoid-builtin-shadow
     intercept_handler = InterceptHandler()
-    logging.root.setLevel(configuration.conf['log_level'])
+    logging.root.setLevel(settings.log_level)
     seen = set()
     for name in [
         *logging.root.manager.loggerDict.keys(),
         "gunicorn",
         "gunicorn.access",
-        "gunicorn.error"
+        "gunicorn.error",
     ]:
         if name not in seen:
             seen.add(name.split(".")[0])
             logging.getLogger(name).handlers = [intercept_handler]
 
-    _format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
-              "<level>{level: <8}</level> | {process} |" \
-              "<cyan>{name}</cyan>:<cyan>{function}</cyan>:" \
-              "<cyan>{line}</cyan> - <level>{message}</level>"
+    _format = (
+        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+        "<level>{level: <8}</level> | {process} |"
+        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:"
+        "<cyan>{line}</cyan> - <level>{message}</level>"
+    )
     logger.configure(handlers=[{"sink": sys.stdout, "serialize": 0, "format": _format}])
 
 
@@ -76,26 +72,26 @@ def create_app():
         return _app
 
     async def lifespan(app: fastapi.FastAPI):
-        # Startup
         setproctitle("sso:master")
         logger.warning(f"process {os.getpid()}")
         set_logging()
-        await postgres.connect()
-
-        yield
-
-        # Shutdown
-        await postgres.disconnect()
+        try:
+            await check_db_connection()
+            logger.info("Connection to the database is established")
+            yield
+        except Exception as e:
+            logger.error(f"Database connection error: {e}")
+            raise e
 
     _app = fastapi.FastAPI(
         title="Single SignOn API",
-        debug=configuration.conf['debug'],
+        debug=settings.debug,
         version=VERSION,
-        docs_url=f"{configuration.conf['http']['path_prefix']}/docs",
-        redoc_url=f"{configuration.conf['http']['path_prefix']}/redoc",
-        openapi_url=f"{configuration.conf['http']['path_prefix']}/openapi.json",
+        docs_url=f"{settings.http.path_prefix}/docs",
+        redoc_url=f"{settings.http.path_prefix}/redoc",
+        openapi_url=f"{settings.http.path_prefix}/openapi.json",
         exception_handlers=exception_handlers,
-        lifespan=lifespan
+        lifespan=lifespan,
     )
 
     _app.add_middleware(
@@ -108,7 +104,7 @@ def create_app():
 
     _app.include_router(
         router,
-        prefix=configuration.conf['http']['path_prefix'],
+        prefix=settings.http.path_prefix,
         dependencies=[fastapi.Depends(logging_dependency)],
     )
 

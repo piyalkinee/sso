@@ -1,9 +1,11 @@
-from loguru import logger
 from fastapi import APIRouter
+from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...commands import access as caccess
-from ...schemas import input as sinput, output as soutput, middleware as smiddleware
-from ...middleware import session as mvsession, route
+from source.commands import access
+from source.middleware import route
+from source.middleware.dependencies import database, session
+from source.schemas import input, middleware, output
 
 router: APIRouter = APIRouter()
 middleware_router = lambda method, path, **kwargs: route(router, method, path, **kwargs)
@@ -13,18 +15,13 @@ middleware_router = lambda method, path, **kwargs: route(router, method, path, *
     method="post",
     path="/",
     summary=f"Get access and refresh tokens",
-    response_model=soutput.AccessOutput,
+    response_model=output.AccessOutput,
     requires_auth=False,
-    permissions=[]
+    permissions=[],
 )
 async def base(
-        data: sinput.BaseInput,
-        session: smiddleware.Session = mvsession
-) -> soutput.AccessOutput:
-    """ Description """
-
+    data: input.BaseInput, ss: middleware.Session = session, db: AsyncSession = database
+) -> output.AccessOutput | None:
+    """Description"""
     logger.debug("In endpoint [base]")
-    return await caccess.base(
-        database=session.db,
-        data=data
-    )
+    return await access.base(database=db, data=data)
