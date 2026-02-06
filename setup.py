@@ -21,6 +21,8 @@ setup(
         'psycopg2-binary==2.9.9',
         'bcrypt==4.2.0',
         'python-jose[cryptography]==3.3.0',
-        'greenlet==3.1.1'
+        'greenlet==3.1.1',
+        'httpx==0.27.0',
+        'google-auth==2.29.0'
     ],
 )

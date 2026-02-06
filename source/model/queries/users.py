@@ -114,3 +114,39 @@ async def get_data_for_token(
     except PostgresError as e:
         logger.warning(e)
         raise DatabaseError from e
+
+
+async def create_oauth2_user(
+        database: Connection,
+        email: str,
+        name: str = None
+) -> int:
+    try:
+        async with database.transaction():
+            # Create Core User
+            user_id = await database.execute("""
+                INSERT INTO users.users_core (updated_at) 
+                VALUES (NOW()) 
+                RETURNING id
+            """)
+            
+            # Create Personal Info
+            # Ensure name is not null
+            safe_name = name or email.split('@')[0]
+            
+            await database.execute("""
+                INSERT INTO users.users_personal_info (user_id, email, name)
+                VALUES (:user_id, :email, :name)
+            """, {"user_id": user_id, "email": email, "name": safe_name})
+            
+            # Create Security (No password for SSO users initially)
+            await database.execute("""
+                INSERT INTO users.users_security (user_id)
+                VALUES (:user_id)
+            """, {"user_id": user_id})
+            
+            return user_id
+            
+    except PostgresError as e:
+        logger.warning(f"Error creating OAuth2 user: {e}")
+        raise DatabaseError from e

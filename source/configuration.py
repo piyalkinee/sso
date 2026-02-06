@@ -39,6 +39,16 @@ _base_config = {
         "access_token_ttl": 1020,  # 1020 minutes
         "refresh_token_ttl": 31556926  # 365 days
     },
+    "oauth2": {
+        "google_client_id": os.getenv(
+            "OAUTH2_GOOGLE_CLIENT_ID",
+            "app.apps.googleusercontent.com"
+        ),
+        "apple_bundle_id": os.getenv(
+            "OAUTH2_APPLE_BUNDLE_ID", 
+            "com.app.app"
+        )
+    }
 }
 
 global conf
