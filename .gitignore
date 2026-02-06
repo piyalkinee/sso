@@ -162,3 +162,8 @@ cython_debug/
 #.idea/
 
 .sso.conf
+/.idea/.gitignore
+/.idea/modules.xml
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/sso.iml
+/.idea/vcs.xml
