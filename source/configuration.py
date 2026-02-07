@@ -34,8 +34,8 @@ _base_config = {
         "database": os.getenv("POSTGRES_DATABASE_SSO", "database")
     },
     "access_security": {
-        "secret_key": "secret",
-        "algorithm": "HS256",
+        "secret_key": os.getenv("SECRET_KEY", "secret"),
+        "algorithm": os.getenv("SSO_ALGORITHM", "HS256"),
         "access_token_ttl": 1020,  # 1020 minutes
         "refresh_token_ttl": 31556926  # 365 days
     },
