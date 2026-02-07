@@ -23,6 +23,7 @@ setup(
         'python-jose[cryptography]==3.3.0',
         'greenlet==3.1.1',
         'httpx==0.27.0',
-        'google-auth==2.29.0'
+        'google-auth==2.29.0',
+        'requests>=2.31.0',
     ],
 )
