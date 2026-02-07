@@ -1,9 +1,10 @@
+from typing import Optional
 from pydantic import BaseModel
 
 class UserFromEmailOutput(BaseModel):
-    id: int = None
-    hash: str = None
-    salt: str = None
+    id: Optional[int] = None
+    hash: Optional[str] = None
+    salt: Optional[str] = None
 
 class TokensOutput(BaseModel):
     access: str = ''
