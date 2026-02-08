@@ -52,6 +52,7 @@ async def get_data_for_token(
                 uinfo.telegram_username AS telegram_username,
                 uinfo.email AS email,
                 uinfo.language AS language,
+                uprov.provider AS provider,
                 g.id AS group_id,
                 g.name AS group_name,
                 c.id AS claim_id,
@@ -68,6 +69,8 @@ async def get_data_for_token(
                 relations.group_claims gclaims ON gclaims.group_id = g.id
             LEFT JOIN 
                 rights.claims c ON c.id = gclaims.claim_id
+            LEFT JOIN 
+                users.users_oauth2_providers uprov ON uprov.user_id = ucore.id
             WHERE 
                 ucore.id = :user_id
             ORDER BY 
@@ -103,12 +106,20 @@ async def get_data_for_token(
                 claims=group_data["claims"]
             ) for group_data in groups_dict.values()
         ]
+        
+        providers = {row["provider"] for row in rows if row["provider"]}
+        user_oauth = susers.UserOAuth(
+            google="google" in providers,
+            apple="apple" in providers
+        )
+        
         return susers.User(
             id=first_row["id"],
             created_at=first_row["created_at"],
             updated_at=first_row["updated_at"],
             info=user_info,
             groups=user_groups,
+            oauth=user_oauth,
             claims=[]
         )
     except PostgresError as e:
@@ -149,4 +160,25 @@ async def create_oauth2_user(
             
     except PostgresError as e:
         logger.warning(f"Error creating OAuth2 user: {e}")
+        raise DatabaseError from e
+
+
+async def record_provider_link(
+        database: Connection,
+        user_id: int,
+        provider: str,
+        provider_user_id: str
+):
+    try:
+        await database.execute("""
+            INSERT INTO users.users_oauth2_providers (user_id, provider, provider_user_id)
+            VALUES (:user_id, :provider, :provider_user_id)
+            ON CONFLICT (provider, provider_user_id) DO NOTHING
+        """, {
+            "user_id": user_id,
+            "provider": provider,
+            "provider_user_id": provider_user_id
+        })
+    except PostgresError as e:
+        logger.warning(f"Error recording provider link: {e}")
         raise DatabaseError from e

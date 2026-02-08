@@ -31,3 +31,27 @@ async def oauth2_login(
         database=session.db,
         data=data
     )
+
+
+@middleware_router(
+    method="post",
+    path="/link",
+    summary="Link OAuth2 Provider (Google/Apple) to current account",
+    response_model=soutput.UserOAuth,
+    requires_auth=True,
+    permissions=[]
+)
+async def oauth2_link(
+        data: oauth2schema.OAuth2Input,
+        session: smiddleware.Session = mvsession
+) -> soutput.UserOAuth:
+    """ 
+    Link Google/Apple identity to the currently logged in user.
+    """
+
+    logger.debug(f"In endpoint [oauth2_link] provider={data.provider}, user_id={session.user.id}")
+    return await cauth.link_oauth2(
+        database=session.db,
+        user_id=session.user.id,
+        data=data
+    )

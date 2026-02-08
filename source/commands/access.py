@@ -81,14 +81,18 @@ async def refresh(
     new_access_token = access_tokens.generate_token(
         type="access",
         data=full_user_data.model_dump(),
-        ttl=conf.access_security.access_token_ttl
+        ttl=conf['access_security']['access_token_ttl']
     )
 
     try:
-        await qtokens.token_refresh(
+        await qtokens.create(
             database=database,
-            refresh_token=data.refresh_token,
-            new_access_token=new_access_token
+            token=stokens.TokenCreate(
+                access_token=new_access_token,
+                refresh_token=data.refresh_token,
+                valid_to=datetime.today() + timedelta(minutes=conf['access_security']['access_token_ttl']),
+                user_id=decoded["id"]
+            )
         )
     except auth.TokenNotFound:
         raise

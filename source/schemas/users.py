@@ -25,9 +25,15 @@ class UserGroup(BaseModel):
     claims: Optional[List[str]] = None
 
 
+class UserOAuth(BaseModel):
+    google: bool = False
+    apple: bool = False
+
+
 class User(BaseModel):
     id: int = None
     created_at: datetime = None
     updated_at: datetime = None
     info: UserInfo = None
     groups: list[UserGroup] = None
+    oauth: UserOAuth = UserOAuth()

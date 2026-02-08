@@ -151,13 +151,17 @@ async def login_oauth2(
              logger.error(f"Failed to create user: {e}")
              raise access.DatabaseError # Generic error
     except Exception as e:
-        # Check if it was indeed 'Not Found'
-        # Re-raising if it's unrelated
-        # Since I can't easily check the exception type without importing, 
-        # I'll update imports to include ItemNotFoundError.
         logger.error(f"Error checking user: {e}")
         raise
         
+    # Link Provider (Ensures it's recorded if not already)
+    await qusers.record_provider_link(
+        database=database,
+        user_id=user_id,
+        provider=data.provider,
+        provider_user_id=email # Using email as provider_user_id since we don't have stable sub table yet
+    )
+
     # Get Full Data
     full_user_data = await qusers.get_data_for_token(database=database, id=user_id)
     
@@ -191,3 +195,33 @@ async def login_oauth2(
             refresh=refresh_token
         )
     )
+
+
+async def link_oauth2(
+        database: Connection,
+        user_id: int,
+        data: oauth2_input.OAuth2Input
+) -> soutput.UserOAuth:
+    
+    email = None
+    if data.provider == 'google':
+        email = await verify_google_token(data.token)
+    elif data.provider == 'apple':
+        email = await verify_apple_token(data.token)
+    else:
+        raise access.InvalidInput("Unsupported provider")
+        
+    logger.info(f"Link OAuth2 verified for email: {email}, user_id: {user_id}")
+
+    # Record Provider Link
+    await qusers.record_provider_link(
+        database=database,
+        user_id=user_id,
+        provider=data.provider,
+        provider_user_id=email
+    )
+    
+    # Return updated OAuth status
+    # Fetching full user data to get all linked providers
+    full_user_data = await qusers.get_data_for_token(database=database, id=user_id)
+    return full_user_data.oauth

@@ -1,6 +1,7 @@
 from .entities.users import users_core
 from .entities.users import users_personal_info
 from .entities.users import users_security
+from .entities.users import users_providers
 
 from .entities.access import tokens_info
 
