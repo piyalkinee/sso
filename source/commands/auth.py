@@ -201,7 +201,7 @@ async def link_oauth2(
         database: Connection,
         user_id: int,
         data: oauth2_input.OAuth2Input
-) -> soutput.UserOAuth:
+) -> susers.UserOAuth:
     
     email = None
     if data.provider == 'google':

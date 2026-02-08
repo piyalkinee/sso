@@ -2,7 +2,7 @@ from loguru import logger
 from fastapi import APIRouter
 
 from ...commands import auth as cauth
-from ...schemas import oauth2 as oauth2schema, output as soutput, middleware as smiddleware
+from ...schemas import oauth2 as oauth2schema, output as soutput, middleware as smiddleware, users as susers
 from ...middleware import session as mvsession, route
 
 router: APIRouter = APIRouter()
@@ -37,14 +37,14 @@ async def oauth2_login(
     method="post",
     path="/link",
     summary="Link OAuth2 Provider (Google/Apple) to current account",
-    response_model=soutput.UserOAuth,
+    response_model=susers.UserOAuth,
     requires_auth=True,
     permissions=[]
 )
 async def oauth2_link(
         data: oauth2schema.OAuth2Input,
         session: smiddleware.Session = mvsession
-) -> soutput.UserOAuth:
+) -> susers.UserOAuth:
     """ 
     Link Google/Apple identity to the currently logged in user.
     """
