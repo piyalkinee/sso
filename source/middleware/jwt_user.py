@@ -31,6 +31,7 @@ def add_user_to_session(function):
             user = susers.User(**token_data)
             session = kwargs.get('session', {})
             
+            # Now that Session has user, we can set it confidently
             if isinstance(session, dict):
                 session['user'] = user
             else:
@@ -39,9 +40,9 @@ def add_user_to_session(function):
             kwargs['session'] = session
             return await function(*args, **kwargs)
         except Exception as e:
+            # Helper to log errors safely
+            from loguru import logger
+            logger.warning(f"Failed to authenticate user from token: {e}")
             # If token is invalid, we don't set user
-            # Usually we should ensure session created?
-            # session = kwargs.get('session', {})
-            # kwargs['session'] = session
             return await function(*args, **kwargs)
     return wrapper

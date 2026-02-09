@@ -6,3 +6,4 @@ class Session:
     def __init__(self, request=None):
         request: Request = request
         db: Connection
+        user = None  # Explicitly allow user attribute
