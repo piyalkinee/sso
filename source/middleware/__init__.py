@@ -30,8 +30,8 @@ def route(
             return await function(*args, **kwargs)
 
         if requires_auth:
-            f = add_user_to_session(f)
             f = check_permissions(permissions)(f)
+            f = add_user_to_session(f)
         f = add_database_to_session(f)
         f = exception_handler(f)
         f = router_type(path, **kwargs)(f)
