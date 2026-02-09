@@ -40,6 +40,10 @@ def exception_handler(function):
             logger.debug("Error executor handler")
             res = await function(*args, **kwargs)
             return res
+        except (http.HTTPException, Exception) as e:
+            # Check if it's a FastAPI/Starlette HTTPException
+            if hasattr(e, 'status_code'):
+                raise e
         except BaseException as e:
             # Take error info
             exc_type, exc_value, exc_traceback = sys.exc_info()
