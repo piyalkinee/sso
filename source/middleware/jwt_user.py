@@ -16,6 +16,13 @@ def add_user_to_session(function):
                 break
         if not request:
             request = kwargs.get('request')
+            
+        # Fallback: check if session object has request
+        if not request:
+            session = kwargs.get('session')
+            if hasattr(session, 'request'):
+                request = session.request
+
         if not request:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
