@@ -7,6 +7,7 @@ import traceback
 
 from loguru import logger
 from functools import wraps
+from fastapi import HTTPException
 from ..exceptions import http
 
 
@@ -40,7 +41,7 @@ def exception_handler(function):
             logger.debug("Error executor handler")
             res = await function(*args, **kwargs)
             return res
-        except (http.HTTPException, Exception) as e:
+        except (HTTPException, Exception) as e:
             # Check if it's a FastAPI/Starlette HTTPException
             if hasattr(e, 'status_code'):
                 raise e
