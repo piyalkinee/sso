@@ -53,8 +53,8 @@ def decode_token(token: str) -> dict[str, str]:
     try:
         data = jose.jwt.decode(
             token,
-            conf.access_security.secret_key,
-            algorithms=conf.access_security.algorithm,
+            conf['access_security']['secret_key'],
+            algorithms=[conf['access_security']['algorithm']],
         )
         return dict(data)
     except jose.JWTError as e:
