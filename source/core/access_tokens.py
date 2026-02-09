@@ -6,6 +6,7 @@ import secrets
 from loguru import logger
 
 from ..configuration import conf
+from ..exceptions import auth
 
 
 def generate_token(data: dict, type: str, ttl: float = 10) -> str:
