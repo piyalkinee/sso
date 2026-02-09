@@ -6,7 +6,13 @@ def check_permissions(permissions_required: list[str]):
         @wraps(function)
         async def wrapper(*args, **kwargs):
             session = kwargs.get('session', {})
-            user = session.get('user')
+            
+            user = None
+            if isinstance(session, dict):
+                user = session.get('user')
+            else:
+                user = getattr(session, 'user', None)
+
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
