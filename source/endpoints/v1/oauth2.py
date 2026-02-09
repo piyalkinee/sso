@@ -37,14 +37,14 @@ async def oauth2_login(
     method="post",
     path="/link",
     summary="Link OAuth2 Provider (Google/Apple) to current account",
-    response_model=susers.UserOAuth,
+    response_model=soutput.AccessOutput,
     requires_auth=True,
     permissions=[]
 )
 async def oauth2_link(
         data: oauth2schema.OAuth2Input,
         session: smiddleware.Session = mvsession
-) -> susers.UserOAuth:
+) -> soutput.AccessOutput:
     """ 
     Link Google/Apple identity to the currently logged in user.
     """

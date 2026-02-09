@@ -224,4 +224,34 @@ async def link_oauth2(
     # Return updated OAuth status
     # Fetching full user data to get all linked providers
     full_user_data = await qusers.get_data_for_token(database=database, id=user_id)
-    return full_user_data.oauth
+    
+    # Generate Tokens (Shared Logic)
+    # Copied from access.base to ensure consistency
+    access_token = access_tokens.generate_token(
+        type="access",
+        data=full_user_data.model_dump(),
+        ttl=conf['access_security']['access_token_ttl']
+    )
+    refresh_token = access_tokens.generate_token(
+        type="refresh",
+        data={
+            "id": user_id
+        },
+        ttl=conf['access_security']['refresh_token_ttl']
+    )
+    
+    await qtokens.create(
+        database=database,
+        token=stokens.TokenCreate(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            valid_to=datetime.today() + timedelta(minutes=conf['access_security']['access_token_ttl']),
+            user_id=user_id,
+        ))
+        
+    return soutput.AccessOutput(
+        tokens=soutput.TokensOutput(
+            access=access_token,
+            refresh=refresh_token
+        )
+    )
