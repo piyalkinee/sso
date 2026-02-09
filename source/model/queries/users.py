@@ -182,3 +182,22 @@ async def record_provider_link(
     except PostgresError as e:
         logger.warning(f"Error recording provider link: {e}")
         raise DatabaseError from e
+
+
+async def get_id_by_provider(
+        database: Connection,
+        provider: str,
+        provider_user_id: str
+):
+    try:
+        row = await database.fetch_one("""
+            SELECT user_id FROM users.users_oauth2_providers
+            WHERE provider = :provider AND provider_user_id = :provider_user_id
+        """, {
+            "provider": provider,
+            "provider_user_id": provider_user_id
+        })
+        return row["user_id"] if row else None
+    except PostgresError as e:
+        logger.warning(f"Error getting user by provider: {e}")
+        raise DatabaseError from e

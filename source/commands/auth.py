@@ -129,30 +129,29 @@ async def login_oauth2(
         
     logger.info(f"OAuth2 Login verified for email: {email}")
 
-    # Check if user exists
-    try:
-        user_email_data = await qusers.get_by_email(database=database, email=email)
-        user_id = user_email_data.id
-    except ItemNotFoundError:
-        # Create User
-        # Wait, proper exception from get_by_email is ItemNotFoundError?
-        # queries/users.py raises ItemNotFoundError
-        # Check imports in this file. 
-        # I imported `from ..exceptions import auth, access`.
-        # ItemNotFoundError is in `exceptions.database`.
-        # I need to import it properly or catch generic `ItemNotFoundError` if available
-        # logic below assumes create on failure.
-        logger.info(f"User not found, creating new user for {email}")
+    # 1. Check if we have a direct provider link (stable ID)
+    user_id = await qusers.get_id_by_provider(
+        database=database,
+        provider=data.provider,
+        provider_user_id=email
+    )
+    
+    if not user_id:
+        # 2. If no link, check by email (legacy or first-time migration)
         try:
-             # Using generic 'create_oauth2_user' or keeping 'create_sso_user' but calling it differently?
-             # I will rename create_sso_user in next step.
-             user_id = await qusers.create_oauth2_user(database, email)
+            user_email_data = await qusers.get_by_email(database=database, email=email)
+            user_id = user_email_data.id
+        except ItemNotFoundError:
+            # 3. If still not found, create new user
+            logger.info(f"User not found, creating new user for {email}")
+            try:
+                user_id = await qusers.create_oauth2_user(database, email)
+            except Exception as e:
+                logger.error(f"Failed to create user: {e}")
+                raise access.DatabaseError # Generic error
         except Exception as e:
-             logger.error(f"Failed to create user: {e}")
-             raise access.DatabaseError # Generic error
-    except Exception as e:
-        logger.error(f"Error checking user: {e}")
-        raise
+            logger.error(f"Error checking user: {e}")
+            raise
         
     # Link Provider (Ensures it's recorded if not already)
     await qusers.record_provider_link(
