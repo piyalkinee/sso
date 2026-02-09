@@ -30,10 +30,18 @@ def add_user_to_session(function):
             token_data = decode_token(token)
             user = susers.User(**token_data)
             session = kwargs.get('session', {})
-            session['user'] = user
+            
+            if isinstance(session, dict):
+                session['user'] = user
+            else:
+                session.user = user
+                
             kwargs['session'] = session
             return await function(*args, **kwargs)
         except Exception as e:
-            kwargs['session'] = {}
+            # If token is invalid, we don't set user
+            # Usually we should ensure session created?
+            # session = kwargs.get('session', {})
+            # kwargs['session'] = session
             return await function(*args, **kwargs)
     return wrapper
