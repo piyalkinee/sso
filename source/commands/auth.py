@@ -255,3 +255,56 @@ async def link_oauth2(
             refresh=refresh_token
         )
     )
+
+
+async def refresh_access_token(
+        database: Connection,
+        refresh_token: str
+) -> soutput.AccessOutput:
+    try:
+        # Decode and verify refresh token
+        token_data = access_tokens.decode_token(refresh_token)
+        
+        if token_data.get('type') != 'refresh':
+             raise auth.InvalidCredentialsError
+             
+        user_id = token_data.get('id')
+        if not user_id:
+            raise auth.InvalidCredentialsError
+            
+        # Verify user exists (and is active)
+        full_user_data = await qusers.get_data_for_token(database=database, id=user_id)
+        
+        # Generate Tokens
+        new_access_token = access_tokens.generate_token(
+            type="access",
+            data=full_user_data.model_dump(),
+            ttl=conf['access_security']['access_token_ttl']
+        )
+        new_refresh_token = access_tokens.generate_token(
+            type="refresh",
+            data={
+                "id": user_id
+            },
+            ttl=conf['access_security']['refresh_token_ttl']
+        )
+        
+        await qtokens.create(
+            database=database,
+            token=stokens.TokenCreate(
+                access_token=new_access_token,
+                refresh_token=new_refresh_token,
+                valid_to=datetime.today() + timedelta(minutes=conf['access_security']['access_token_ttl']),
+                user_id=user_id,
+            ))
+            
+        return soutput.AccessOutput(
+            tokens=soutput.TokensOutput(
+                access=new_access_token,
+                refresh=new_refresh_token
+            )
+        )
+        
+    except Exception as e:
+        logger.error(f"Refresh Token Failed: {e}")
+        raise auth.InvalidCredentialsError

@@ -58,7 +58,7 @@ def decode_token(token: str) -> dict[str, str]:
         )
         return dict(data)
     except jose.JWTError as e:
-        raise "Invalid Token" from e
+        raise auth.InvalidCredentialsError from e
 
 
 def generate_salt():

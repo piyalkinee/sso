@@ -55,3 +55,25 @@ async def oauth2_link(
         user_id=session.user.id,
         data=data
     )
+
+
+@middleware_router(
+    method="post",
+    path="/refresh",
+    summary="Refresh Access Token",
+    response_model=soutput.AccessOutput,
+    requires_auth=False,
+    permissions=[]
+)
+async def oauth2_refresh(
+        data: oauth2schema.RefreshInput,
+        session: smiddleware.Session = mvsession
+) -> soutput.AccessOutput:
+    """ 
+    Get new Access/Refresh tokens using a valid Refresh Token.
+    """
+    logger.debug(f"In endpoint [oauth2_refresh]")
+    return await cauth.refresh_access_token(
+        database=session.db,
+        refresh_token=data.refresh_token
+    )
