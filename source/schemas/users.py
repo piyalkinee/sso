@@ -28,6 +28,8 @@ class UserGroup(BaseModel):
 class UserOAuth(BaseModel):
     google: bool = False
     apple: bool = False
+    google_email: Optional[str] = None
+    apple_email: Optional[str] = None
 
 
 class User(BaseModel):

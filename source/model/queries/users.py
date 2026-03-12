@@ -53,6 +53,7 @@ async def get_data_for_token(
                 uinfo.email AS email,
                 uinfo.language AS language,
                 uprov.provider AS provider,
+                uprov.provider_user_id AS provider_user_id,
                 g.id AS group_id,
                 g.name AS group_name,
                 c.id AS claim_id,
@@ -107,10 +108,12 @@ async def get_data_for_token(
             ) for group_data in groups_dict.values()
         ]
         
-        providers = {row["provider"] for row in rows if row["provider"]}
+        provider_emails = {row["provider"]: row["provider_user_id"] for row in rows if row["provider"]}
         user_oauth = susers.UserOAuth(
-            google="google" in providers,
-            apple="apple" in providers
+            google="google" in provider_emails,
+            apple="apple" in provider_emails,
+            google_email=provider_emails.get("google"),
+            apple_email=provider_emails.get("apple"),
         )
         
         return susers.User(
