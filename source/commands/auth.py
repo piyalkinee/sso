@@ -8,7 +8,7 @@ from jose import jwt, jwk
 from jose.utils import base64url_decode
 import json
 
-from ..model.queries import users as qusers, tokens as qtokens
+from ..model.queries import users as qusers, tokens as qtokens, projects as qprojects
 from ..schemas import oauth2 as oauth2_input, output as soutput, tokens as stokens, users as susers
 from ..core import access_tokens
 from ..configuration import conf
@@ -163,22 +163,31 @@ async def login_oauth2(
 
     # Get Full Data
     full_user_data = await qusers.get_data_for_token(database=database, id=user_id)
-    
-    # Generate Tokens (Shared Logic)
-    # Copied from access.base to ensure consistency
+
+    project_id_str = None
+    if data.project_id:
+        if await qprojects.exists(database=database, project_id=data.project_id):
+            await qprojects.link_user(database=database, user_id=user_id, project_id=data.project_id)
+            project_id_str = str(data.project_id)
+        else:
+            logger.warning(f"project_id={data.project_id} not found, skipping link")
+
+    user_projects = await qprojects.get_user_project_names(database=database, user_id=user_id)
+
     access_token = access_tokens.generate_token(
         type="access",
-        data=full_user_data.model_dump(),
+        data={**full_user_data.model_dump(), "project_id": project_id_str, "projects": user_projects},
         ttl=conf['access_security']['access_token_ttl']
     )
     refresh_token = access_tokens.generate_token(
         type="refresh",
         data={
-            "id": user_id
+            "id": user_id,
+            "project_id": project_id_str,
         },
         ttl=conf['access_security']['refresh_token_ttl']
     )
-    
+
     await qtokens.create(
         database=database,
         token=stokens.TokenCreate(
@@ -187,7 +196,7 @@ async def login_oauth2(
             valid_to=datetime.today() + timedelta(minutes=conf['access_security']['access_token_ttl']),
             user_id=user_id,
         ))
-        
+
     return soutput.AccessOutput(
         tokens=soutput.TokensOutput(
             access=access_token,
@@ -270,20 +279,24 @@ async def refresh_access_token(
         user_id = token_data.get('id')
         if not user_id:
             raise auth.InvalidCredentialsError
-            
+
+        project_id_str = token_data.get('project_id')
+
         # Verify user exists (and is active)
         full_user_data = await qusers.get_data_for_token(database=database, id=user_id)
-        
+        user_projects = await qprojects.get_user_project_names(database=database, user_id=user_id)
+
         # Generate Tokens
         new_access_token = access_tokens.generate_token(
             type="access",
-            data=full_user_data.model_dump(),
+            data={**full_user_data.model_dump(), "project_id": project_id_str, "projects": user_projects},
             ttl=conf['access_security']['access_token_ttl']
         )
         new_refresh_token = access_tokens.generate_token(
             type="refresh",
             data={
-                "id": user_id
+                "id": user_id,
+                "project_id": project_id_str,
             },
             ttl=conf['access_security']['refresh_token_ttl']
         )
