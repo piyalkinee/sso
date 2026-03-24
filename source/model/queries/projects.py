@@ -10,7 +10,7 @@ from ...exceptions.database import DatabaseError
 async def exists(database: Connection, project_id: UUID) -> bool:
     try:
         row = await database.fetch_one(
-            "SELECT id FROM projects.projects WHERE id = :project_id",
+            "SELECT id FROM projects.projects_core WHERE id = :project_id",
             {"project_id": str(project_id)}
         )
         return row is not None
@@ -24,7 +24,7 @@ async def get_user_project_names(database: Connection, user_id: int) -> list[str
         rows = await database.fetch_all("""
             SELECT p.name
             FROM relations.user_projects up
-            JOIN projects.projects p ON p.id = up.project_id
+            JOIN projects.projects_core p ON p.id = up.project_id
             WHERE up.user_id = :user_id
         """, {"user_id": user_id})
         return [row["name"] for row in rows]

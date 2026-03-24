@@ -4,7 +4,7 @@ from ....core.database.postgres import Base
 
 
 class Projects(Base):
-    __tablename__ = "projects"
+    __tablename__ = "projects_core"
     __table_args__ = {"schema": "projects"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text('gen_random_uuid()'))
