@@ -33,11 +33,11 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['user_id'], ['users.users_core.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['project_id'], ['projects.projects.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('user_id', 'project_id'),
-        schema='projects'
+        schema='relations'
     )
 
 
 def downgrade() -> None:
-    op.drop_table('user_projects', schema='projects')
+    op.drop_table('user_projects', schema='relations')
     op.drop_table('projects', schema='projects')
     op.execute('DROP SCHEMA projects')

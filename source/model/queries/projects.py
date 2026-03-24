@@ -23,7 +23,7 @@ async def get_user_project_names(database: Connection, user_id: int) -> list[str
     try:
         rows = await database.fetch_all("""
             SELECT p.name
-            FROM projects.user_projects up
+            FROM relations.user_projects up
             JOIN projects.projects p ON p.id = up.project_id
             WHERE up.user_id = :user_id
         """, {"user_id": user_id})
@@ -36,7 +36,7 @@ async def get_user_project_names(database: Connection, user_id: int) -> list[str
 async def link_user(database: Connection, user_id: int, project_id: UUID) -> None:
     try:
         await database.execute("""
-            INSERT INTO projects.user_projects (user_id, project_id)
+            INSERT INTO relations.user_projects (user_id, project_id)
             VALUES (:user_id, :project_id)
             ON CONFLICT DO NOTHING
         """, {"user_id": user_id, "project_id": str(project_id)})

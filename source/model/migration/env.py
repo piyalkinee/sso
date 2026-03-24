@@ -15,7 +15,7 @@ config.set_main_option("sqlalchemy.url", connection_string)
 
 def include_name(name, type_, parent_names):
     if type_ == "schema":
-        return name in ["public", "access", "relations", "rights", "users"]
+        return name in ["public", "access", "relations", "rights", "users", "projects"]
     else:
         return True
 
