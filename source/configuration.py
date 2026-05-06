@@ -45,10 +45,32 @@ _base_config = {
             "app.apps.googleusercontent.com"
         ),
         "apple_bundle_id": os.getenv(
-            "OAUTH2_APPLE_BUNDLE_ID", 
+            "OAUTH2_APPLE_BUNDLE_ID",
             "com.app.app"
         )
-    }
+    },
+    "verification": {
+        "code_length": int(os.getenv("VERIFICATION_CODE_LENGTH", "6")),
+        "code_ttl": int(os.getenv("VERIFICATION_CODE_TTL", "300")),
+        "max_attempts": int(os.getenv("VERIFICATION_MAX_ATTEMPTS", "5")),
+    },
+    "sms": {
+        "provider": os.getenv("SMS_PROVIDER", "mock"),
+    },
+    "twilio": {
+        "account_sid": os.getenv("TWILIO_ACCOUNT_SID", ""),
+        "auth_token": os.getenv("TWILIO_AUTH_TOKEN", ""),
+        "from_phone": os.getenv("TWILIO_FROM_PHONE", ""),
+        "messaging_service_sid": os.getenv("TWILIO_MESSAGING_SERVICE_SID", ""),
+    },
+    "whatsapp": {
+        "api_url": os.getenv("WHATSAPP_API_URL", "https://graph.facebook.com/v17.0"),
+        "phone_number_id": os.getenv("WHATSAPP_PHONE_NUMBER_ID", ""),
+        "api_token": os.getenv("WHATSAPP_API_TOKEN", ""),
+    },
+    "telegram": {
+        "bot_token": os.getenv("TELEGRAM_BOT_TOKEN", ""),
+    },
 }
 
 global conf

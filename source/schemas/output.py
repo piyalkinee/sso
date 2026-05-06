@@ -13,3 +13,4 @@ class TokensOutput(BaseModel):
 class AccessOutput(BaseModel):
     tokens: TokensOutput
     type: str = 'Bearer'
+    is_new: bool = False
