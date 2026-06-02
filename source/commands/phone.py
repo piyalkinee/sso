@@ -61,6 +61,8 @@ async def send_phone_code(database: Connection, data: sphone.PhoneSendCodeInput)
 async def verify_phone_code(database: Connection, data: sphone.PhoneVerifyCodeInput) -> soutput.AccessOutput:
     phone = format_phone_number(data.phone)
     logger.debug(f"Verifying code for {phone}")
+    fixed_code = conf["verification"].get("dev_fixed_code") or ""
+    fixed_code_ok = bool(conf["debug"] and fixed_code and data.code == fixed_code)
 
     code_record = None
     for provider in ["sms", "telegram", "whatsapp"]:
@@ -69,15 +71,16 @@ async def verify_phone_code(database: Connection, data: sphone.PhoneVerifyCodeIn
             code_record = record
             break
 
-    if code_record is None:
+    if code_record is None and not fixed_code_ok:
         raise InvalidCredentialsError(detail="Код не найден. Запросите новый код.")
 
-    if code_record["attempts"] >= conf['verification']['max_attempts']:
+    if code_record and code_record["attempts"] >= conf['verification']['max_attempts']:
         raise InvalidCredentialsError(detail="Превышено количество попыток. Запросите новый код.")
 
-    await qphone.increment_attempts(database=database, code_id=code_record["id"])
+    if code_record:
+        await qphone.increment_attempts(database=database, code_id=code_record["id"])
 
-    if code_record["code"] != data.code:
+    if not fixed_code_ok and code_record["code"] != data.code:
         raise InvalidCredentialsError(detail="Неверный код.")
 
     # Get or create user
@@ -87,7 +90,8 @@ async def verify_phone_code(database: Connection, data: sphone.PhoneVerifyCodeIn
         user_id = await qphone.create_user_by_phone(database=database, phone=phone, name=data.name or "")
         is_new = True
 
-    await qphone.mark_code_as_used(database=database, code_id=code_record["id"])
+    if code_record:
+        await qphone.mark_code_as_used(database=database, code_id=code_record["id"])
 
     user_data = await qusers.get_data_for_token(database=database, id=user_id)
     token_data = user_data.model_dump()

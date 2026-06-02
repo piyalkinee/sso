@@ -53,6 +53,7 @@ _base_config = {
         "code_length": int(os.getenv("VERIFICATION_CODE_LENGTH", "6")),
         "code_ttl": int(os.getenv("VERIFICATION_CODE_TTL", "300")),
         "max_attempts": int(os.getenv("VERIFICATION_MAX_ATTEMPTS", "5")),
+        "dev_fixed_code": os.getenv("DEV_FIXED_OTP_CODE", ""),
     },
     "sms": {
         "provider": os.getenv("SMS_PROVIDER", "mock"),
