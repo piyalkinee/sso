@@ -11,11 +11,23 @@ from ..exceptions import auth
 
 def generate_token(data: dict, type: str, ttl: float = 10) -> str:
     logger.debug("In core [generate_token]")
-    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=ttl)
+    issued_at = datetime.datetime.utcnow()
+    expiration_time = issued_at + datetime.timedelta(minutes=ttl)
+    sub = str(data.get("sub") or data.get("id") or "")
+    roles = data.get("roles")
+    if roles is None:
+        roles = [
+            g["name"] if isinstance(g, dict) else g.name
+            for g in data.get("groups", [])
+            if (isinstance(g, dict) and g.get("name")) or (hasattr(g, "name") and g.name)
+        ]
     token_payload = {
         **data,
+        "sub": sub,
+        "roles": roles,
         "type": type,
         "exp": int(expiration_time.timestamp()),
+        "iat": int(issued_at.timestamp()),
         "salt": secrets.token_urlsafe(32),
     }
 
