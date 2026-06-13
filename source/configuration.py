@@ -40,10 +40,11 @@ _base_config = {
         "refresh_token_ttl": 31556926  # 365 days
     },
     "oauth2": {
-        "google_client_id": os.getenv(
-            "OAUTH2_GOOGLE_CLIENT_ID",
-            "app.apps.googleusercontent.com"
-        ),
+        "google_client_id": [
+            cid.strip()
+            for cid in os.getenv("OAUTH2_GOOGLE_CLIENT_ID", "app.apps.googleusercontent.com").split(",")
+            if cid.strip()
+        ],
         "apple_bundle_id": os.getenv(
             "OAUTH2_APPLE_BUNDLE_ID",
             "com.app.app"
