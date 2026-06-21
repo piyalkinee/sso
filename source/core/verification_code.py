@@ -1,4 +1,4 @@
-import random
+import secrets
 from datetime import datetime, timedelta
 
 from loguru import logger
@@ -8,7 +8,7 @@ from ..configuration import conf
 
 def generate_verification_code() -> str:
     code_length = conf['verification']['code_length']
-    return ''.join([str(random.randint(0, 9)) for _ in range(code_length)])
+    return ''.join([str(secrets.randbelow(10)) for _ in range(code_length)])
 
 
 def get_code_expiration_time() -> datetime:

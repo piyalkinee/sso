@@ -15,8 +15,8 @@ if fn:
     load_dotenv(dotenv_path=fn)
 
 _base_config = {
-    "log_level": os.getenv("LOG_LEVEL", "DEBUG"),
-    "debug": os.getenv("DEBUG", "True") == "True",
+    "log_level": os.getenv("LOG_LEVEL", "INFO"),
+    "debug": os.getenv("DEBUG", "False") == "True",
     "workers": int(os.getenv("WORKERS", 1)),
     "api": {
         "host": os.getenv("API_HOST", "0.0.0.0"),

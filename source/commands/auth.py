@@ -9,7 +9,7 @@ from jose.utils import base64url_decode
 import json
 
 from ..model.queries import users as qusers, tokens as qtokens, projects as qprojects
-from ..schemas import oauth2 as oauth2_input, output as soutput, tokens as stokens, users as susers
+from ..schemas import oauth2 as oauth2_input, output as soutput, tokens as stokens
 from ..core import access_tokens
 from ..configuration import conf
 from ..exceptions import auth, access
@@ -38,74 +38,31 @@ async def verify_google_token(token: str) -> str:
 
 async def verify_apple_token(token: str) -> str:
     try:
-        # Fetch Apple's Public Keys
         async with httpx.AsyncClient() as client:
             response = await client.get("https://appleid.apple.com/auth/keys")
             response.raise_for_status()
             jwks = response.json()
 
-        # Decode header to find unverified Key ID
         header = jwt.get_unverified_header(token)
         kid = header.get("kid")
         alg = header.get("alg")
 
-        # Find the matching key
-        rsa_key = {}
-        for key in jwks["keys"]:
-            if key["kid"] == kid:
-                rsa_key = key
-                break
-        
+        rsa_key = next((key for key in jwks["keys"] if key["kid"] == kid), None)
         if not rsa_key:
             raise ValueError("Invalid Key ID")
 
-        # Verify Signature
-        # Note: In production, verify audience (client_id) and issuer ("https://appleid.apple.com")
-        # We allow any audience for now or ideally restrictive if we knew Bundle ID perfectly.
-        # But failing verification of signature is the main check.
+        bundle_id = conf['oauth2']['apple_bundle_id']
         payload = jwt.decode(
             token,
             rsa_key,
             algorithms=[alg],
-            audience=None, # Explicitly disable audience check if we don't have Bundle ID or multiple
+            audience=bundle_id,
             issuer="https://appleid.apple.com",
-            options={"verify_aud": False} # Important if we don't pass audience
         )
-        
-        email = payload.get("email")
-        
-        # Apple only shares email on the FIRST sign-in in the id_token if scopes requested.
-        # However, `sub` is stable. 
-        # But our system relies on email for uniqueness (based on previous plan confirmation).
-        # IF email is missing in the token (subsequent logins), this logic might fail 
-        # if we strictly need email to find the user in our DB (since we didn't add provider_id table).
-        # WAIT. If Apple doesn't return email in token on subsequent login, 
-        # but only 'sub', we can't look up by email!
-        # This is a critical risk with the "No DB Change" approach.
-        # Apple ID Token *usually* contains email claims?
-        # Docs: "The email claim is present only if the user granted the email scope."
-        # And "The private relay email... is stable".
-        # Let's assume we get it or the client passed it. 
-        # Actually, client should send email if available.
-        # But we must trust the token.
-        # If token has email, good. If not, and we depend on email -> Problem.
-        # Ideally, we should have stored `sub` -> `user_id` mapping.
-        # Since I cannot change DB, I must hope email is present or handle this constraint.
-        # For now, I will extract email and fail if missing.
-        
-        if not email:
-            # Fallback: Check if we can proceed. 
-            # In real implementations without stored 'sub', we might need to rely on client sending email 
-            # AND verify `sub` matches what we might have stored? No we don't store `sub`.
-            # This is a limitation of the "No DB Schema Change" request.
-            # I will assume email is present.
-            pass
 
-        if not email and "email" in payload:
-             email = payload["email"]
-             
+        email = payload.get("email")
         if not email:
-             raise ValueError("Email not found in Apple Token")
+            raise ValueError("Email not found in Apple Token")
 
         return email
 
@@ -209,7 +166,7 @@ async def link_oauth2(
         database: Connection,
         user_id: int,
         data: oauth2_input.OAuth2Input
-) -> susers.UserOAuth:
+) -> soutput.AccessOutput:
     
     email = None
     if data.provider == 'google':

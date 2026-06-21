@@ -31,8 +31,6 @@ def generate_token(data: dict, type: str, ttl: float = 10) -> str:
         "salt": secrets.token_urlsafe(32),
     }
 
-    logger.debug(f"Token payload before serialization: {token_payload}")
-
     def make_serializable(obj):
         if isinstance(obj, dict):
             return {k: make_serializable(v) for k, v in obj.items()}
@@ -47,7 +45,6 @@ def generate_token(data: dict, type: str, ttl: float = 10) -> str:
             return obj
 
     serializable_payload = make_serializable(token_payload)
-    logger.debug(f"Serializable payload: {serializable_payload}")
 
     try:
         token = jose.jwt.encode(
@@ -74,5 +71,5 @@ def decode_token(token: str) -> dict[str, str]:
         raise auth.InvalidCredentialsError from e
 
 
-def generate_salt():
-    return "salt"
+def generate_salt() -> str:
+    return secrets.token_urlsafe(32)
