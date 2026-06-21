@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from loguru import logger
 
@@ -12,7 +12,7 @@ def generate_verification_code() -> str:
 
 
 def get_code_expiration_time() -> datetime:
-    return datetime.utcnow() + timedelta(seconds=conf['verification']['code_ttl'])
+    return datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=conf['verification']['code_ttl'])
 
 
 def format_phone_number(phone: str) -> str:

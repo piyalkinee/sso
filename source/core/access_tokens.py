@@ -11,7 +11,7 @@ from ..exceptions import auth
 
 def generate_token(data: dict, type: str, ttl: float = 10) -> str:
     logger.debug("In core [generate_token]")
-    issued_at = datetime.datetime.utcnow()
+    issued_at = datetime.datetime.now(datetime.timezone.utc)
     expiration_time = issued_at + datetime.timedelta(minutes=ttl)
     sub = str(data.get("sub") or data.get("id") or "")
     roles = data.get("roles")

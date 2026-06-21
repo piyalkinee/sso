@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from loguru import logger
@@ -67,7 +67,7 @@ async def verify_phone_code(database: Connection, data: sphone.PhoneVerifyCodeIn
     code_record = None
     for provider in ["sms", "telegram", "whatsapp"]:
         record = await qphone.get_latest_verification_code(database=database, phone=phone, provider=provider)
-        if record and record["expires_at"] >= datetime.utcnow() and not record["used_at"]:
+        if record and record["expires_at"] >= datetime.now(timezone.utc).replace(tzinfo=None) and not record["used_at"]:
             code_record = record
             break
 

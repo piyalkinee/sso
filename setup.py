@@ -26,4 +26,11 @@ setup(
         'google-auth==2.29.0',
         'requests>=2.31.0',
     ],
+    extras_require={
+        'test': [
+            'pytest==8.3.3',
+            'pytest-asyncio==0.24.0',
+            'pytest-mock==3.14.0',
+        ]
+    },
 )
