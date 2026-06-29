@@ -15,8 +15,24 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.rename_table('projects', 'projects_core', schema='projects')
+    op.execute("""
+        DO $$
+        BEGIN
+            IF to_regclass('projects.projects') IS NOT NULL
+               AND to_regclass('projects.projects_core') IS NULL THEN
+                ALTER TABLE projects.projects RENAME TO projects_core;
+            END IF;
+        END $$;
+    """)
 
 
 def downgrade() -> None:
-    op.rename_table('projects_core', 'projects', schema='projects')
+    op.execute("""
+        DO $$
+        BEGIN
+            IF to_regclass('projects.projects_core') IS NOT NULL
+               AND to_regclass('projects.projects') IS NULL THEN
+                ALTER TABLE projects.projects_core RENAME TO projects;
+            END IF;
+        END $$;
+    """)
