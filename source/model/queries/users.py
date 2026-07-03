@@ -166,6 +166,39 @@ async def create_oauth2_user(
         raise DatabaseError from e
 
 
+async def create_password_user(
+        database: Connection,
+        email: str,
+        password_hash: str,
+        password_salt: str,
+        name: str = None
+) -> int:
+    try:
+        async with database.transaction():
+            user_id = await database.execute("""
+                INSERT INTO users.users_core (updated_at)
+                VALUES (NOW())
+                RETURNING id
+            """)
+            safe_name = name or email.split('@')[0]
+            await database.execute("""
+                INSERT INTO users.users_personal_info (user_id, email, name)
+                VALUES (:user_id, :email, :name)
+            """, {"user_id": user_id, "email": email, "name": safe_name})
+            await database.execute("""
+                INSERT INTO users.users_security (user_id, password_hash, password_salt)
+                VALUES (:user_id, :password_hash, :password_salt)
+            """, {
+                "user_id": user_id,
+                "password_hash": password_hash,
+                "password_salt": password_salt,
+            })
+            return user_id
+    except PostgresError as e:
+        logger.warning(f"Error creating password user: {e}")
+        raise DatabaseError from e
+
+
 async def record_provider_link(
         database: Connection,
         user_id: int,

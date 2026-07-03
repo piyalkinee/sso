@@ -8,6 +8,7 @@ from ..schemas import input as sinput, output as soutput, tokens as saccess, tok
 from ..core import salt, access_tokens
 from ..configuration import conf
 from ..exceptions import auth, access
+from ..exceptions.database import ItemNotFoundError
 
 
 async def base(
@@ -15,18 +16,31 @@ async def base(
         database: Connection
 ) -> soutput.AccessOutput:
     logger.debug("Get user data use email")
-    user_data: soutput.UserFromEmailOutput = await qusers.get_by_email(
-        database=database,
-        email=data.email
-    )
+    is_new_user = False
+    try:
+        user_data: soutput.UserFromEmailOutput = await qusers.get_by_email(
+            database=database,
+            email=data.email
+        )
+    except ItemNotFoundError:
+        password_hash, password_salt = await salt.create_password_salt(data.password)
+        user_id = await qusers.create_password_user(
+            database=database,
+            email=data.email,
+            password_hash=password_hash,
+            password_salt=password_salt,
+        )
+        user_data = await qusers.get_by_email(database=database, email=data.email)
+        is_new_user = True
     logger.debug("Verify password")
-    verify_result: bool = await salt.verify_password(
-        input_password=data.password,
-        password_hash=user_data.hash,
-        password_salt=user_data.salt
-    )
-    if verify_result is False:
-        raise access.InvalidPassword
+    if not is_new_user:
+        verify_result: bool = await salt.verify_password(
+            input_password=data.password,
+            password_hash=user_data.hash,
+            password_salt=user_data.salt
+        )
+        if verify_result is False:
+            raise access.InvalidPassword
     logger.debug("Get user")
     full_user_data: susers.User = await qusers.get_data_for_token(
         database=database,
@@ -70,7 +84,8 @@ async def base(
         tokens=soutput.TokensOutput(
             access=access_token,
             refresh=refresh_token
-        )
+        ),
+        is_new=is_new_user,
     )
 
 
