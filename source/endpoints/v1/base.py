@@ -28,3 +28,24 @@ async def base(
         database=session.db,
         data=data
     )
+
+
+@middleware_router(
+    method="post",
+    path="/register/",
+    summary=f"Register password user",
+    response_model=soutput.AccessOutput,
+    requires_auth=False,
+    permissions=[]
+)
+async def register(
+        data: sinput.RegisterInput,
+        session: smiddleware.Session = mvsession
+) -> soutput.AccessOutput:
+    """Register password user and return access tokens."""
+
+    logger.debug("In endpoint [register]")
+    return await caccess.register(
+        database=session.db,
+        data=data
+    )

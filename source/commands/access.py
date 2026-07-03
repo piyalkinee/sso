@@ -7,33 +7,18 @@ from ..model.queries import users as qusers, tokens as qtokens, projects as qpro
 from ..schemas import input as sinput, output as soutput, tokens as saccess, tokens as stokens, users as susers
 from ..core import salt, access_tokens
 from ..configuration import conf
-from ..exceptions import auth, access
+from ..exceptions import auth, access, http
 from ..exceptions.database import ItemNotFoundError
 
 
-async def base(
+async def _issue_password_tokens(
         data: sinput.BaseInput,
-        database: Connection
+        database: Connection,
+        user_data: soutput.UserFromEmailOutput,
+        is_new: bool = False
 ) -> soutput.AccessOutput:
-    logger.debug("Get user data use email")
-    is_new_user = False
-    try:
-        user_data: soutput.UserFromEmailOutput = await qusers.get_by_email(
-            database=database,
-            email=data.email
-        )
-    except ItemNotFoundError:
-        password_hash, password_salt = await salt.create_password_salt(data.password)
-        user_id = await qusers.create_password_user(
-            database=database,
-            email=data.email,
-            password_hash=password_hash,
-            password_salt=password_salt,
-        )
-        user_data = await qusers.get_by_email(database=database, email=data.email)
-        is_new_user = True
     logger.debug("Verify password")
-    if not is_new_user:
+    if not is_new:
         verify_result: bool = await salt.verify_password(
             input_password=data.password,
             password_hash=user_data.hash,
@@ -85,8 +70,56 @@ async def base(
             access=access_token,
             refresh=refresh_token
         ),
-        is_new=is_new_user,
+        is_new=is_new,
     )
+
+
+async def base(
+        data: sinput.BaseInput,
+        database: Connection
+) -> soutput.AccessOutput:
+    logger.debug("Get user data use email")
+    try:
+        user_data: soutput.UserFromEmailOutput = await qusers.get_by_email(
+            database=database,
+            email=data.email
+        )
+    except ItemNotFoundError as e:
+        raise access.InvalidPassword("Invalid email or password.") from e
+
+    return await _issue_password_tokens(
+        data=data,
+        database=database,
+        user_data=user_data,
+        is_new=False,
+    )
+
+
+async def register(
+        data: sinput.RegisterInput,
+        database: Connection
+) -> soutput.AccessOutput:
+    logger.debug("Register password user")
+    try:
+        await qusers.get_by_email(database=database, email=data.email)
+    except ItemNotFoundError:
+        password_hash, password_salt = await salt.create_password_salt(data.password)
+        await qusers.create_password_user(
+            database=database,
+            email=data.email,
+            password_hash=password_hash,
+            password_salt=password_salt,
+            name=data.name,
+        )
+        user_data = await qusers.get_by_email(database=database, email=data.email)
+        return await _issue_password_tokens(
+            data=data,
+            database=database,
+            user_data=user_data,
+            is_new=True,
+        )
+
+    raise http.HTTPConflictError("User already exists.")
 
 
 async def refresh(
