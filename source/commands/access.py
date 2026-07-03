@@ -112,6 +112,16 @@ async def register(
             name=data.name,
         )
         user_data = await qusers.get_by_email(database=database, email=data.email)
+
+        reg = conf["registration"]
+        if reg["allow_role"]:
+            if data.role not in reg["allowed_roles"]:
+                raise http.HTTPBadRequestError("Invalid registration role.")
+            group_id = await qusers.ensure_group(database=database, name=data.role)
+            await qusers.add_user_to_group(
+                database=database, user_id=user_data.id, group_id=group_id
+            )
+
         return await _issue_password_tokens(
             data=data,
             database=database,

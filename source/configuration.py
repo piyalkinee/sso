@@ -39,6 +39,18 @@ _base_config = {
         "access_token_ttl": 1020,  # 1020 minutes
         "refresh_token_ttl": 31556926  # 365 days
     },
+    "registration": {
+        # Security switch: whether a client may pick its own role/group at
+        # registration. OFF by default so nobody can self-assign an arbitrary
+        # role. Enable explicitly (ALLOW_REGISTER_ROLE=True) for products where
+        # self-selecting account type at sign-up is intended.
+        "allow_role": os.getenv("ALLOW_REGISTER_ROLE", "False") == "True",
+        "allowed_roles": [
+            r.strip()
+            for r in os.getenv("REGISTER_ALLOWED_ROLES", "company,candidate").split(",")
+            if r.strip()
+        ],
+    },
     "oauth2": {
         "google_client_id": [
             cid.strip()

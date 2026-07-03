@@ -199,6 +199,44 @@ async def create_password_user(
         raise DatabaseError from e
 
 
+async def ensure_group(database: Connection, name: str) -> int:
+    """Return the id of the group with this name, creating it if missing."""
+    try:
+        row = await database.fetch_one(
+            "SELECT id FROM rights.groups WHERE name = :name",
+            {"name": name},
+        )
+        if row:
+            return row["id"]
+        return await database.execute(
+            """
+            INSERT INTO rights.groups (name, description, is_active)
+            VALUES (:name, :name, true)
+            RETURNING id
+            """,
+            {"name": name},
+        )
+    except PostgresError as e:
+        logger.warning(f"Error ensuring group {name}: {e}")
+        raise DatabaseError from e
+
+
+async def add_user_to_group(database: Connection, user_id: int, group_id: int) -> None:
+    """Link a user to a group (idempotent)."""
+    try:
+        await database.execute(
+            """
+            INSERT INTO relations.user_groups (user_id, group_id)
+            VALUES (:user_id, :group_id)
+            ON CONFLICT (user_id, group_id) DO NOTHING
+            """,
+            {"user_id": user_id, "group_id": group_id},
+        )
+    except PostgresError as e:
+        logger.warning(f"Error linking user {user_id} to group {group_id}: {e}")
+        raise DatabaseError from e
+
+
 async def record_provider_link(
         database: Connection,
         user_id: int,
