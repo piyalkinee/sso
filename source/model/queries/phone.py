@@ -45,8 +45,9 @@ async def create_verification_code(
     phone: str,
     provider: str,
     user_id: int | None = None,
+    code: str | None = None,
 ) -> str:
-    code = generate_verification_code()
+    code = code or generate_verification_code()
     expires_at = get_code_expiration_time()
     try:
         await database.execute(

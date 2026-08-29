@@ -75,15 +75,20 @@ class TestSendPhoneCode:
 
         assert result.success is True
 
-    async def test_debug_exposes_code(self):
+    async def test_allowlisted_phone_exposes_fixed_code(self):
         db = AsyncMock()
-        debug_conf = {**BASE_CONF, 'debug': True}
-        mock_provider = AsyncMock()
-        mock_provider.send_code = AsyncMock(return_value=True)
+        debug_conf = {
+            **BASE_CONF,
+            'debug': True,
+            'verification': {
+                **BASE_CONF['verification'],
+                'dev_fixed_code': '654321',
+                'dev_fixed_phones': {'+77001234567'},
+            },
+        }
 
         with patch('source.commands.phone.conf', debug_conf), \
-             patch('source.commands.phone.qphone.create_verification_code', AsyncMock(return_value="654321")), \
-             patch('source.commands.phone.PhoneProviderFactory.get_provider', return_value=mock_provider):
+             patch('source.commands.phone.qphone.create_verification_code', AsyncMock(return_value="654321")):
             result = await send_phone_code(db, PhoneSendCodeInput(phone="+77001234567", provider="sms"))
 
         assert result.debug_code == "654321"
@@ -180,9 +185,17 @@ class TestVerifyPhoneCode:
 
         assert result.is_new is True
 
-    async def test_fixed_code_works_in_debug(self):
+    async def test_fixed_code_works_for_allowlisted_phone(self):
         db = AsyncMock()
-        debug_conf = {**BASE_CONF, 'debug': True, 'verification': {**BASE_CONF['verification'], 'dev_fixed_code': '000000'}}
+        debug_conf = {
+            **BASE_CONF,
+            'debug': True,
+            'verification': {
+                **BASE_CONF['verification'],
+                'dev_fixed_code': '000000',
+                'dev_fixed_phones': {'+77001234567'},
+            },
+        }
         user = _make_user()
 
         with patch('source.commands.phone.conf', debug_conf), \

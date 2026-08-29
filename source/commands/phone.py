@@ -26,16 +26,27 @@ async def check_phone(database: Connection, data: sphone.PhoneCheckInput) -> sph
 async def send_phone_code(database: Connection, data: sphone.PhoneSendCodeInput) -> sphone.PhoneSendCodeOutput:
     phone = format_phone_number(data.phone)
     logger.info(f"Sending code to {phone} via {data.provider}")
+    verification = conf["verification"]
+    fixed_code = verification.get("dev_fixed_code") or ""
+    is_fixed_test_phone = bool(
+        fixed_code
+        and phone in verification.get("dev_fixed_phones", set())
+    )
 
     code = await qphone.create_verification_code(
         database=database,
         phone=phone,
         provider=data.provider,
+        code=fixed_code if is_fixed_test_phone else None,
     )
 
-    provider = PhoneProviderFactory.get_provider(data.provider)
-    success = await provider.send_code(phone, code)
-    expose_debug_code = conf["debug"] or conf["sms"]["provider"] == "mock"
+    if is_fixed_test_phone:
+        success = True
+        logger.info(f"Skipping external OTP provider for allowlisted test phone {phone}")
+    else:
+        provider = PhoneProviderFactory.get_provider(data.provider)
+        success = await provider.send_code(phone, code)
+    expose_debug_code = is_fixed_test_phone
 
     if not success:
         if not expose_debug_code:
@@ -61,8 +72,13 @@ async def send_phone_code(database: Connection, data: sphone.PhoneSendCodeInput)
 async def verify_phone_code(database: Connection, data: sphone.PhoneVerifyCodeInput) -> soutput.AccessOutput:
     phone = format_phone_number(data.phone)
     logger.debug(f"Verifying code for {phone}")
-    fixed_code = conf["verification"].get("dev_fixed_code") or ""
-    fixed_code_ok = bool(conf["debug"] and fixed_code and data.code == fixed_code)
+    verification = conf["verification"]
+    fixed_code = verification.get("dev_fixed_code") or ""
+    fixed_code_ok = bool(
+        fixed_code
+        and phone in verification.get("dev_fixed_phones", set())
+        and data.code == fixed_code
+    )
 
     code_record = None
     for provider in ["sms", "telegram", "whatsapp"]:

@@ -67,6 +67,11 @@ _base_config = {
         "code_ttl": int(os.getenv("VERIFICATION_CODE_TTL", "300")),
         "max_attempts": int(os.getenv("VERIFICATION_MAX_ATTEMPTS", "5")),
         "dev_fixed_code": os.getenv("DEV_FIXED_OTP_CODE", ""),
+        "dev_fixed_phones": {
+            phone.strip()
+            for phone in os.getenv("DEV_FIXED_OTP_PHONES", "").split(",")
+            if phone.strip()
+        },
     },
     "sms": {
         "provider": os.getenv("SMS_PROVIDER", "mock"),
